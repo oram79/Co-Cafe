@@ -1,7 +1,8 @@
 import { useNavigate } from 'react-router-dom'
 import { Package, BarChart2, BookOpen, ChevronRight } from 'lucide-react'
 // Logo URL — place your logo.png in the public/ folder
-const logoUrl = '/logo.png'
+const logoUrl    = '/logo2.png'
+const bgLogoUrl  = '/logo.png'
 
 const NAV_ITEMS = [
   {
@@ -46,7 +47,7 @@ export default function Landing() {
       <div style={{
         position: 'absolute',
         inset: 0,
-        backgroundImage: `url(${logoUrl})`,
+        backgroundImage: `url(${bgLogoUrl})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
@@ -69,7 +70,7 @@ export default function Landing() {
         <div className="anim-fade-in" style={{ marginBottom: 'var(--s5)' }}>
           <img
             src={logoUrl}
-            alt="Cape Coffee"
+            alt="Co. Cafe"
             style={{
               width: 100,
               height: 100,
@@ -94,7 +95,7 @@ export default function Landing() {
             marginBottom: 'var(--s2)',
           }}
         >
-          Cape Coffee
+          Co. Cafe
         </h1>
 
         <p

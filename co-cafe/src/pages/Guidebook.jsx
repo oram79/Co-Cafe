@@ -50,7 +50,7 @@ export default function Guidebook() {
           <h2 style={{ fontFamily: 'var(--font-display)' }}>Guidebook</h2>
 
           <p style={{ color: 'var(--text-muted)', maxWidth: 380, lineHeight: 1.7 }}>
-            This section is under construction. The Cape Coffee guidebook will include
+            This section is under construction. The Co. Cafe guidebook will include
             open & close checklists, brewing guides, cafe procedures, and more.
           </p>
 
