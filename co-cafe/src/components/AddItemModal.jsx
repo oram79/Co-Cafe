@@ -3,12 +3,11 @@ import { X } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 
 const CATEGORIES = [
-  'Espresso & Coffee',
-  'Fridge Drinks',
-  'Fridge Food',
-  'Pastries',
+  'Baked Goods',
+  'Pantry Items',
   'Cafe Supplies',
-  'Other',
+  'Food Items',
+  'Canned Drinks'
 ]
 
 const BLANK = {

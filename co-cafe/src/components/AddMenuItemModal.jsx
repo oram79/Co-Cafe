@@ -3,7 +3,11 @@ import { X, Plus, Trash2, Edit3, Check } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 
 const MENU_CATEGORIES = [
-  'Espresso', 'Drip Coffee', 'Tea', 'Pastries', 'Fridge Drinks', 'Food', 'Other',
+  'Hot Drinks',
+  'Cold Drinks',
+  'Baked Goods',
+  'Food Items',
+  'Pantry Items',
 ]
 
 const BLANK = { name: '', category: 'Espresso', price: 0, inventoryId: null }
