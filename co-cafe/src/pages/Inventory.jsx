@@ -159,7 +159,7 @@ export default function Inventory() {
                           cursor: 'pointer',
                           gap: 'var(--s3)',
                         }}
-                        onMouseEnter={e => e.currentTarget.style.background = isLow ? 'rgba(184,64,64,0.06)' : 'var(--latte)'}
+                        onMouseEnter={e => e.currentTarget.style.background = isLow ? 'rgba(184,64,64,0.06)' : 'rgba(255,255,255,0.04)'}
                         onMouseLeave={e => e.currentTarget.style.background = isLow ? 'rgba(184,64,64,0.03)' : 'transparent'}
                         onClick={() => setSelectedItem(item)}
                       >
