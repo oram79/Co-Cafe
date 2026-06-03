@@ -3,12 +3,11 @@ import { X, Trash2 } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 
 const CATEGORIES = [
-  'Espresso & Coffee',
-  'Fridge Drinks',
-  'Fridge Food',
-  'Pastries',
+  'Baked Goods',
+  'Pantry Items',
   'Cafe Supplies',
-  'Other',
+  'Food Items',
+  'Canned Drinks'
 ]
 
 export default function ItemDetailModal({ item, onClose }) {
