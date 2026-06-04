@@ -11,7 +11,7 @@ const MENU_CATEGORIES = [
   'Can Drinks',
 ]
 
-const BLANK = { name: '', category: 'Error 05', price: 0, inventoryId: null }
+const BLANK = { name: '', category: 'Coffee', price: 0, inventoryId: null }
 
 export default function AddMenuItemModal({ onClose }) {
   const { menu, inventory, addMenuItem, updateMenuItem, deleteMenuItem } = useApp()
