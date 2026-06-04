@@ -8,6 +8,7 @@ const MENU_CATEGORIES = [
   'Baked Goods',
   'Food Items',
   'Pantry Items',
+  'Can Drinks',
 ]
 
 const BLANK = { name: '', category: 'Error 05', price: 0, inventoryId: null }
