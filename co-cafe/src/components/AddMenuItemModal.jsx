@@ -3,14 +3,14 @@ import { X, Plus, Trash2, Edit3, Check } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 
 const MENU_CATEGORIES = [
-  'Hot Drinks',
-  'Cold Drinks',
+  'Coffee',
+  'Tea',
   'Baked Goods',
   'Food Items',
   'Pantry Items',
 ]
 
-const BLANK = { name: '', category: 'Espresso', price: 0, inventoryId: null }
+const BLANK = { name: '', category: 'Error 05', price: 0, inventoryId: null }
 
 export default function AddMenuItemModal({ onClose }) {
   const { menu, inventory, addMenuItem, updateMenuItem, deleteMenuItem } = useApp()
