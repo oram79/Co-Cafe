@@ -61,7 +61,7 @@ export default function SaleEntryModal({ onClose }) {
     if (!menuItem.inventoryId) return null
     const inv = inventory.find(i => i.id === menuItem.inventoryId)
     if (!inv) return null
-    if (inv.quantity < qty) return `Only ${inv.quantity} in stock`
+    if (inv.quantity < qty) return `${inv.quantity} in stock`
     return null
   }
 

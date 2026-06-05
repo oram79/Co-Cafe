@@ -74,7 +74,7 @@ export default function Inventory() {
           }}>
             <AlertTriangle size={15} />
             <strong>{lowStockCount} item{lowStockCount > 1 ? 's' : ''} running low</strong>
-            <span style={{ opacity: 0.7 }}>— check the items marked in red below</span>
+            <span style={{ opacity: 0.7 }}>check the items marked in red below</span>
           </div>
         )}
 
