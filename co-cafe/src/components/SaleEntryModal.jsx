@@ -39,7 +39,9 @@ export default function SaleEntryModal({ onClose }) {
     return { menuItem, qty }
   }).filter(Boolean)
 
-  const total = cartItems.reduce((sum, { menuItem, qty }) => sum + menuItem.price * qty, 0)
+  const subtotal = cartItems.reduce((sum, { menuItem, qty }) => sum + menuItem.price * qty, 0)
+  const tax      = subtotal * 0.15
+  const total    = subtotal + tax
 
   function handleRecord() {
     if (cartItems.length === 0) return
@@ -182,7 +184,15 @@ export default function SaleEntryModal({ onClose }) {
               ))}
             </div>
             <div style={{ borderTop: '1px solid var(--border)', paddingTop: 'var(--s3)', marginTop: 'var(--s3)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--s3)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                <span>Subtotal</span>
+                <span>${subtotal.toFixed(2)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--s3)', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                <span>Tax (15%)</span>
+                <span>${tax.toFixed(2)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--s3)', borderTop: '1px solid var(--border)', paddingTop: 'var(--s2)' }}>
                 <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600 }}>Total</span>
                 <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, color: 'var(--accent)', fontSize: '1.1rem' }}>
                   ${total.toFixed(2)}

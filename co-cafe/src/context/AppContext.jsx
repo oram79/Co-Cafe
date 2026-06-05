@@ -52,14 +52,19 @@ export function AppProvider({ children }) {
   }
 
   // ── Sales helpers ──────────────────────────────────────────────────────────
+  const TAX_RATE = 0.15
+
   function recordSale(lineItems) {
     // lineItems: [{ menuItemId, name, category, price, quantity }]
-    const saleTotal = lineItems.reduce((sum, li) => sum + li.price * li.quantity, 0)
+    const subtotal = lineItems.reduce((sum, li) => sum + li.price * li.quantity, 0)
+    const tax      = subtotal * TAX_RATE
     const sale = {
       id: `sale-${Date.now()}`,
       timestamp: new Date().toISOString(),
       items: lineItems,
-      total: saleTotal,
+      subtotal,
+      tax,
+      total: subtotal + tax,
     }
     setSales(prev => [...prev, sale])
 

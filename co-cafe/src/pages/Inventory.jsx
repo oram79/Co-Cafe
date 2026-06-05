@@ -10,7 +10,7 @@ export default function Inventory() {
   const [search, setSearch] = useState('')
   const [selectedItem, setSelectedItem] = useState(null)
   const [showAdd, setShowAdd] = useState(false)
-  const [collapsedCats, setCollapsedCats] = useState({})
+  const [expandedCats, setExpandedCats] = useState({})
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase()
@@ -31,7 +31,7 @@ export default function Inventory() {
   const lowStockCount = inventory.filter(i => i.quantity <= i.lowStockAt).length
 
   function toggleCat(cat) {
-    setCollapsedCats(prev => ({ ...prev, [cat]: !prev[cat] }))
+    setExpandedCats(prev => ({ ...prev, [cat]: !prev[cat] }))
   }
 
   return (
@@ -123,9 +123,9 @@ export default function Inventory() {
                 onMouseLeave={e => e.currentTarget.style.background = 'var(--latte)'}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--s3)' }}>
-                  {collapsedCats[cat]
-                    ? <ChevronRight size={14} color="var(--text-muted)" />
-                    : <ChevronDown size={14} color="var(--text-muted)" />
+                  {expandedCats[cat]
+                    ? <ChevronDown size={14} color="var(--text-muted)" />
+                    : <ChevronRight size={14} color="var(--text-muted)" />
                   }
                   <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '0.95rem' }}>
                     {cat}
@@ -142,7 +142,7 @@ export default function Inventory() {
               </button>
 
               {/* Items list */}
-              {!collapsedCats[cat] && (
+              {expandedCats[cat] && (
                 <div>
                   {items.map((item, idx) => {
                     const isLow = item.quantity <= item.lowStockAt
