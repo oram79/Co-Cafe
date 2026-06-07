@@ -6,9 +6,10 @@ const TAX_RATE = 0.15
 const AppContext = createContext(null)
 
 export function AppProvider({ children }) {
-  const [inventory, setInventory] = useLocalStorage('cc_inventory', [])
-  const [menu,      setMenu]      = useLocalStorage('cc_menu', [])
-  const [shifts,    setShifts]    = useLocalStorage('cc_shifts', [])
+  const [inventory,   setInventory]   = useLocalStorage('cc_inventory', [])
+  const [menu,        setMenu]        = useLocalStorage('cc_menu', [])
+  const [shifts,      setShifts]      = useLocalStorage('cc_shifts', [])
+  const [checklists,  setChecklists]  = useLocalStorage('co-cafe-checklists', { open: [], close: [] })
 
   const activeShift = shifts.find(s => !s.endedAt) ?? null
 
@@ -90,12 +91,13 @@ export function AppProvider({ children }) {
       inventory,
       menu,
       shifts,
+      checklists,
     }
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
     const url  = URL.createObjectURL(blob)
     const a    = document.createElement('a')
     a.href     = url
-    a.download = `cocafe-backup-${new Date().toISOString().split('T')[0]}.json`
+    a.download = `cocafe-data-${new Date().toISOString().split('T')[0]}.json`
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -108,6 +110,7 @@ export function AppProvider({ children }) {
         if (Array.isArray(data.inventory)) setInventory(data.inventory)
         if (Array.isArray(data.menu))      setMenu(data.menu)
         if (Array.isArray(data.shifts))    setShifts(data.shifts)
+        if (data.checklists && typeof data.checklists === 'object') setChecklists(data.checklists)
       } catch {
         alert('Could not read the file — make sure it is a valid Co. Cafe backup.')
       }
@@ -128,7 +131,7 @@ export function AppProvider({ children }) {
   }
 
   const value = {
-    inventory, menu, shifts, activeShift,
+    inventory, menu, shifts, activeShift, checklists, setChecklists,
     addInventoryItem, updateInventoryItem, deleteInventoryItem, adjustQuantity,
     addMenuItem, updateMenuItem, deleteMenuItem,
     startShift, endShift, recordSale, deleteSale, deleteShift,

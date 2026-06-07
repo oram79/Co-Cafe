@@ -1,31 +1,19 @@
 import { useState, useEffect } from 'react'
 import { BookOpen, Sun, Moon, RotateCcw, Pencil, Plus, Trash2, Check, GripVertical, Coffee, Wrench, Phone, Maximize2, X } from 'lucide-react'
 import NavBar from '../components/NavBar'
+import { useApp } from '../context/AppContext'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 
-const STORAGE_KEY = 'co-cafe-checklists'
-const DEFAULT_DATA = { open: [], close: [] }
 const PREVIEW_LIMIT = 4
 
 export default function Guidebook() {
-  const [lists, setLists] = useState(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY)
-      return saved ? JSON.parse(saved) : DEFAULT_DATA
-    } catch {
-      return DEFAULT_DATA
-    }
-  })
+  const { checklists: lists, setChecklists: setLists } = useApp()
   const [tab, setTab] = useState('open')
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState('')
   const [expanded, setExpanded] = useState(false)
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(lists))
-  }, [lists])
 
   useEffect(() => {
     if (!expanded) setEditing(false)
