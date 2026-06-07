@@ -1,18 +1,16 @@
 import { createContext, useContext } from 'react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 
-// ── Seed data ─────────────────────────────────────────────────────────────────
-const SEED_INVENTORY = []
+const TAX_RATE = 0.15
 
-const SEED_MENU = []
-
-// ── Context ────────────────────────────────────────────────────────────────────
 const AppContext = createContext(null)
 
 export function AppProvider({ children }) {
-  const [inventory, setInventory] = useLocalStorage('cc_inventory', SEED_INVENTORY)
-  const [menu, setMenu] = useLocalStorage('cc_menu', SEED_MENU)
-  const [sales, setSales] = useLocalStorage('cc_sales', [])
+  const [inventory, setInventory] = useLocalStorage('cc_inventory', [])
+  const [menu,      setMenu]      = useLocalStorage('cc_menu', [])
+  const [shifts,    setShifts]    = useLocalStorage('cc_shifts', [])
+
+  const activeShift = shifts.find(s => !s.endedAt) ?? null
 
   // ── Inventory helpers ──────────────────────────────────────────────────────
   function addInventoryItem(item) {
@@ -27,7 +25,6 @@ export function AppProvider({ children }) {
 
   function deleteInventoryItem(id) {
     setInventory(prev => prev.filter(i => i.id !== id))
-    // Also unlink from menu
     setMenu(prev => prev.map(m => m.inventoryId === id ? { ...m, inventoryId: null } : m))
   }
 
@@ -39,8 +36,7 @@ export function AppProvider({ children }) {
 
   // ── Menu helpers ───────────────────────────────────────────────────────────
   function addMenuItem(item) {
-    const newItem = { ...item, id: `menu-${Date.now()}` }
-    setMenu(prev => [...prev, newItem])
+    setMenu(prev => [...prev, { ...item, id: `menu-${Date.now()}` }])
   }
 
   function updateMenuItem(id, updates) {
@@ -51,41 +47,92 @@ export function AppProvider({ children }) {
     setMenu(prev => prev.filter(m => m.id !== id))
   }
 
-  // ── Sales helpers ──────────────────────────────────────────────────────────
-  const TAX_RATE = 0.15
+  // ── Shift helpers ──────────────────────────────────────────────────────────
+  function startShift() {
+    setShifts(prev => [...prev, {
+      id:        `shift-${Date.now()}`,
+      startedAt: new Date().toISOString(),
+      endedAt:   null,
+      sales:     [],
+    }])
+  }
+
+  function endShift() {
+    setShifts(prev => prev.map(s =>
+      !s.endedAt ? { ...s, endedAt: new Date().toISOString() } : s
+    ))
+  }
 
   function recordSale(lineItems) {
-    // lineItems: [{ menuItemId, name, category, price, quantity }]
     const subtotal = lineItems.reduce((sum, li) => sum + li.price * li.quantity, 0)
     const tax      = subtotal * TAX_RATE
     const sale = {
-      id: `sale-${Date.now()}`,
+      id:        `sale-${Date.now()}`,
       timestamp: new Date().toISOString(),
-      items: lineItems,
+      items:     lineItems,
       subtotal,
       tax,
       total: subtotal + tax,
     }
-    setSales(prev => [...prev, sale])
-
-    // Decrement inventory for linked items
+    setShifts(prev => prev.map(s =>
+      !s.endedAt ? { ...s, sales: [...s.sales, sale] } : s
+    ))
     lineItems.forEach(li => {
       const menuItem = menu.find(m => m.id === li.menuItemId)
-      if (menuItem?.inventoryId) {
-        adjustQuantity(menuItem.inventoryId, -li.quantity)
-      }
+      if (menuItem?.inventoryId) adjustQuantity(menuItem.inventoryId, -li.quantity)
     })
   }
 
-  function deleteSale(id) {
-    setSales(prev => prev.filter(s => s.id !== id))
+  // ── Data export / import ──────────────────────────────────────────────────
+  function exportData() {
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      inventory,
+      menu,
+      shifts,
+    }
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
+    const url  = URL.createObjectURL(blob)
+    const a    = document.createElement('a')
+    a.href     = url
+    a.download = `cocafe-backup-${new Date().toISOString().split('T')[0]}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  function importData(file) {
+    const reader = new FileReader()
+    reader.onload = e => {
+      try {
+        const data = JSON.parse(e.target.result)
+        if (Array.isArray(data.inventory)) setInventory(data.inventory)
+        if (Array.isArray(data.menu))      setMenu(data.menu)
+        if (Array.isArray(data.shifts))    setShifts(data.shifts)
+      } catch {
+        alert('Could not read the file — make sure it is a valid Co. Cafe backup.')
+      }
+    }
+    reader.readAsText(file)
+  }
+
+  function deleteShift(shiftId) {
+    setShifts(prev => prev.filter(s => s.id !== shiftId))
+  }
+
+  function deleteSale(saleId) {
+    setShifts(prev => prev.map(s =>
+      !s.endedAt
+        ? { ...s, sales: s.sales.filter(sale => sale.id !== saleId) }
+        : s
+    ))
   }
 
   const value = {
-    inventory, menu, sales,
+    inventory, menu, shifts, activeShift,
     addInventoryItem, updateInventoryItem, deleteInventoryItem, adjustQuantity,
     addMenuItem, updateMenuItem, deleteMenuItem,
-    recordSale, deleteSale,
+    startShift, endShift, recordSale, deleteSale, deleteShift,
+    exportData, importData,
   }
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

@@ -1,32 +1,52 @@
 import { useState, useMemo } from 'react'
-import { Plus, Search, AlertTriangle, Minus, ChevronDown, ChevronRight } from 'lucide-react'
+import { Plus, Search, AlertTriangle, Minus, ChevronDown, ChevronRight, ArrowUpDown } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import NavBar from '../components/NavBar'
 import ItemDetailModal from '../components/ItemDetailModal'
 import AddItemModal from '../components/AddItemModal'
 
+const SORT_OPTIONS = [
+  { key: 'name-asc',  label: 'Name A→Z'  },
+  { key: 'name-desc', label: 'Name Z→A'  },
+  { key: 'qty-asc',   label: 'Qty ↑'     },
+  { key: 'qty-desc',  label: 'Qty ↓'     },
+]
+
+function sortItems(items, sort) {
+  return [...items].sort((a, b) => {
+    if (sort === 'name-asc')  return a.name.localeCompare(b.name)
+    if (sort === 'name-desc') return b.name.localeCompare(a.name)
+    if (sort === 'qty-asc')   return a.quantity - b.quantity
+    if (sort === 'qty-desc')  return b.quantity - a.quantity
+    return 0
+  })
+}
+
 export default function Inventory() {
   const { inventory, adjustQuantity } = useApp()
-  const [search, setSearch] = useState('')
+  const [search, setSearch]           = useState('')
+  const [sort, setSort]               = useState('name-asc')
+  const [lowStockOnly, setLowStockOnly] = useState(false)
   const [selectedItem, setSelectedItem] = useState(null)
-  const [showAdd, setShowAdd] = useState(false)
+  const [showAdd, setShowAdd]           = useState(false)
   const [expandedCats, setExpandedCats] = useState({})
 
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase()
-    return inventory.filter(i =>
-      i.name.toLowerCase().includes(q) || i.category.toLowerCase().includes(q)
-    )
-  }, [inventory, search])
-
   const grouped = useMemo(() => {
+    const q = search.toLowerCase()
     const map = {}
-    filtered.forEach(item => {
+    inventory.forEach(item => {
+      if (search && !item.name.toLowerCase().includes(q) && !item.category.toLowerCase().includes(q)) return
+      if (lowStockOnly && item.quantity > item.lowStockAt) return
       if (!map[item.category]) map[item.category] = []
       map[item.category].push(item)
     })
-    return map
-  }, [filtered])
+    // Sort items within each category, then return categories A→Z
+    const sorted = {}
+    Object.keys(map).sort((a, b) => a.localeCompare(b)).forEach(cat => {
+      sorted[cat] = sortItems(map[cat], sort)
+    })
+    return sorted
+  }, [inventory, search, sort, lowStockOnly])
 
   const lowStockCount = inventory.filter(i => i.quantity <= i.lowStockAt).length
 
@@ -74,12 +94,12 @@ export default function Inventory() {
           }}>
             <AlertTriangle size={15} />
             <strong>{lowStockCount} item{lowStockCount > 1 ? 's' : ''} running low</strong>
-            <span style={{ opacity: 0.7 }}>check the items marked in red below</span>
+            <span style={{ opacity: 0.7 }}></span>
           </div>
         )}
 
         {/* Search */}
-        <div style={{ position: 'relative', marginBottom: 'var(--s5)' }} className="anim-fade-in">
+        <div style={{ position: 'relative', marginBottom: 'var(--s3)' }} className="anim-fade-in">
           <Search size={15} style={{
             position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)',
             color: 'var(--text-muted)', pointerEvents: 'none',
@@ -93,13 +113,64 @@ export default function Inventory() {
           />
         </div>
 
+        {/* Sort + filter bar */}
+        <div className="anim-fade-in" style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 'var(--s2)',
+          marginBottom: 'var(--s5)',
+          flexWrap: 'wrap',
+        }}>
+          <ArrowUpDown size={13} color="var(--text-muted)" style={{ flexShrink: 0 }} />
+          {SORT_OPTIONS.map(opt => (
+            <button
+              key={opt.key}
+              onClick={() => setSort(opt.key)}
+              style={{
+                padding: '4px 12px',
+                borderRadius: 'var(--r-pill)',
+                fontSize: '0.73rem',
+                fontWeight: 500,
+                whiteSpace: 'nowrap',
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'all var(--t-fast)',
+                background: sort === opt.key ? 'var(--espresso)' : 'var(--latte)',
+                color: sort === opt.key ? 'var(--cream)' : 'var(--text-secondary)',
+              }}
+            >
+              {opt.label}
+            </button>
+          ))}
+
+          <div style={{ width: 1, height: 16, background: 'var(--border)', margin: '0 var(--s1)', flexShrink: 0 }} />
+
+          <button
+            onClick={() => setLowStockOnly(v => !v)}
+            style={{
+              padding: '4px 12px',
+              borderRadius: 'var(--r-pill)',
+              fontSize: '0.73rem',
+              fontWeight: 500,
+              whiteSpace: 'nowrap',
+              border: 'none',
+              cursor: 'pointer',
+              transition: 'all var(--t-fast)',
+              background: lowStockOnly ? 'rgba(184,64,64,0.15)' : 'var(--latte)',
+              color: lowStockOnly ? 'var(--danger)' : 'var(--text-secondary)',
+            }}
+          >
+            Low Stock
+          </button>
+        </div>
+
         {/* Category groups */}
         {Object.keys(grouped).length === 0 ? (
           <div style={{ textAlign: 'center', padding: 'var(--s8)', color: 'var(--text-muted)' }}>
             No items found
           </div>
         ) : (
-          Object.entries(grouped).map(([cat, items], gi) => (
+          Object.entries(grouped).map(([cat, items]) => (
             <div
               key={cat}
               className="card"
@@ -132,13 +203,11 @@ export default function Inventory() {
                   </span>
                   <span className="badge badge-neutral">{items.length}</span>
                 </div>
-                <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                  {items.filter(i => i.quantity <= i.lowStockAt).length > 0 && (
-                    <span style={{ color: 'var(--danger)' }}>
-                      {items.filter(i => i.quantity <= i.lowStockAt).length} low
-                    </span>
-                  )}
-                </span>
+                {items.filter(i => i.quantity <= i.lowStockAt).length > 0 && (
+                  <span style={{ fontSize: '0.78rem', color: 'var(--danger)' }}>
+                    {items.filter(i => i.quantity <= i.lowStockAt).length} low
+                  </span>
+                )}
               </button>
 
               {/* Items list */}
@@ -170,9 +239,7 @@ export default function Inventory() {
                             <span style={{ fontWeight: 500, fontSize: '0.9rem' }} className="truncate">
                               {item.name}
                             </span>
-                            {isLow && (
-                              <AlertTriangle size={12} color="var(--danger)" />
-                            )}
+                            {isLow && <AlertTriangle size={12} color="var(--danger)" />}
                           </div>
                           {item.notes && (
                             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>

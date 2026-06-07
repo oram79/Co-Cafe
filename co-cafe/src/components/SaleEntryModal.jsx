@@ -15,11 +15,13 @@ export default function SaleEntryModal({ onClose }) {
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase()
-    return menu.filter(m => {
-      const matchesSearch = m.name.toLowerCase().includes(q)
-      const matchesCat = activeCategory === 'All' || m.category === activeCategory
-      return matchesSearch && matchesCat
-    })
+    return menu
+      .filter(m => {
+        const matchesSearch = m.name.toLowerCase().includes(q)
+        const matchesCat = activeCategory === 'All' || m.category === activeCategory
+        return matchesSearch && matchesCat
+      })
+      .sort((a, b) => a.name.localeCompare(b.name))
   }, [menu, search, activeCategory])
 
   function addToCart(itemId) {

@@ -1,5 +1,7 @@
+import { useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Package, BarChart2, BookOpen, ChevronRight } from 'lucide-react'
+import { Package, BarChart2, BookOpen, ChevronRight, Download, Upload } from 'lucide-react'
+import { useApp } from '../context/AppContext'
 // Logo URL — place your logo.png in the public/ folder
 const logoUrl    = '/logo2.png'
 const bgLogoUrl  = '/logo.png'
@@ -29,7 +31,9 @@ const NAV_ITEMS = [
 ]
 
 export default function Landing() {
-  const navigate = useNavigate()
+  const navigate    = useNavigate()
+  const { exportData, importData } = useApp()
+  const fileInputRef = useRef(null)
 
   return (
     <div style={{
@@ -105,11 +109,60 @@ export default function Landing() {
             fontSize: '0.95rem',
             letterSpacing: '0.18em',
             textTransform: 'uppercase',
-            marginBottom: 'var(--s8)',
+            marginBottom: 'var(--s3)',
           }}
         >
           Cafe Management System
         </p>
+
+        {/* Export / Import */}
+        <div className="anim-fade-in delay-2" style={{ display: 'flex', justifyContent: 'center', gap: 'var(--s2)', marginBottom: 'var(--s5)' }}>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            style={{ display: 'none' }}
+            onChange={e => {
+              const file = e.target.files?.[0]
+              if (file) importData(file)
+              e.target.value = ''
+            }}
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '6px 12px',
+              background: 'rgba(245,239,230,0.08)',
+              border: '1px solid rgba(245,239,230,0.15)',
+              borderRadius: 'var(--r2)',
+              color: 'rgba(245,239,230,0.5)',
+              fontSize: '0.72rem', cursor: 'pointer',
+              backdropFilter: 'blur(8px)', transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = 'rgba(245,239,230,0.9)'; e.currentTarget.style.borderColor = 'rgba(245,239,230,0.35)' }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'rgba(245,239,230,0.5)'; e.currentTarget.style.borderColor = 'rgba(245,239,230,0.15)' }}
+          >
+            <Upload size={12} /> Import
+          </button>
+          <button
+            onClick={exportData}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '6px 12px',
+              background: 'rgba(245,239,230,0.08)',
+              border: '1px solid rgba(245,239,230,0.15)',
+              borderRadius: 'var(--r2)',
+              color: 'rgba(245,239,230,0.5)',
+              fontSize: '0.72rem', cursor: 'pointer',
+              backdropFilter: 'blur(8px)', transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = 'rgba(245,239,230,0.9)'; e.currentTarget.style.borderColor = 'rgba(245,239,230,0.35)' }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'rgba(245,239,230,0.5)'; e.currentTarget.style.borderColor = 'rgba(245,239,230,0.15)' }}
+          >
+            <Download size={12} /> Export
+          </button>
+        </div>
 
         {/* Nav buttons */}
         <div style={{
@@ -201,6 +254,7 @@ export default function Landing() {
         >
           St. John's, NL
         </p>
+
       </div>
     </div>
   )
