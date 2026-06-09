@@ -11,7 +11,10 @@ export function AppProvider({ children }) {
   const [shifts,      setShifts]      = useLocalStorage('cc_shifts', [])
   const [checklists,  setChecklists]  = useLocalStorage('co-cafe-checklists', { open: [], close: [] })
 
-  const activeShift = shifts.find(s => !s.endedAt) ?? null
+  const _now        = new Date()
+  const _todayStr   = _now.toDateString()
+  const activeShift = shifts.find(s => new Date(s.startedAt).toDateString() === _todayStr) ?? null
+  const isOpen      = _now.getHours() >= 8 && _now.getHours() < 15
 
   // ── Inventory helpers ──────────────────────────────────────────────────────
   function addInventoryItem(item) {
@@ -49,21 +52,6 @@ export function AppProvider({ children }) {
   }
 
   // ── Shift helpers ──────────────────────────────────────────────────────────
-  function startShift() {
-    setShifts(prev => [...prev, {
-      id:        `shift-${Date.now()}`,
-      startedAt: new Date().toISOString(),
-      endedAt:   null,
-      sales:     [],
-    }])
-  }
-
-  function endShift() {
-    setShifts(prev => prev.map(s =>
-      !s.endedAt ? { ...s, endedAt: new Date().toISOString() } : s
-    ))
-  }
-
   function recordSale(lineItems) {
     const subtotal = lineItems.reduce((sum, li) => sum + li.price * li.quantity, 0)
     const tax      = subtotal * TAX_RATE
@@ -75,9 +63,27 @@ export function AppProvider({ children }) {
       tax,
       total: subtotal + tax,
     }
-    setShifts(prev => prev.map(s =>
-      !s.endedAt ? { ...s, sales: [...s.sales, sale] } : s
-    ))
+    const today   = new Date()
+    const todayDs = today.toDateString()
+    setShifts(prev => {
+      const hasToday = prev.some(s => new Date(s.startedAt).toDateString() === todayDs)
+      let next = prev
+      if (!hasToday) {
+        const start = new Date(today)
+        start.setHours(8, 0, 0, 0)
+        next = [...prev, {
+          id:        `shift-${Date.now()}`,
+          startedAt: start.toISOString(),
+          endedAt:   null,
+          sales:     [],
+        }]
+      }
+      return next.map(s =>
+        new Date(s.startedAt).toDateString() === todayDs
+          ? { ...s, sales: [...s.sales, sale] }
+          : s
+      )
+    })
     lineItems.forEach(li => {
       const menuItem = menu.find(m => m.id === li.menuItemId)
       if (menuItem?.inventoryId) adjustQuantity(menuItem.inventoryId, -li.quantity)
@@ -123,18 +129,17 @@ export function AppProvider({ children }) {
   }
 
   function deleteSale(saleId) {
-    setShifts(prev => prev.map(s =>
-      !s.endedAt
-        ? { ...s, sales: s.sales.filter(sale => sale.id !== saleId) }
-        : s
-    ))
+    setShifts(prev => prev.map(s => ({
+      ...s,
+      sales: s.sales.filter(sale => sale.id !== saleId),
+    })))
   }
 
   const value = {
-    inventory, menu, shifts, activeShift, checklists, setChecklists,
+    inventory, menu, shifts, activeShift, isOpen, checklists, setChecklists,
     addInventoryItem, updateInventoryItem, deleteInventoryItem, adjustQuantity,
     addMenuItem, updateMenuItem, deleteMenuItem,
-    startShift, endShift, recordSale, deleteSale, deleteShift,
+    recordSale, deleteSale, deleteShift,
     exportData, importData,
   }
 

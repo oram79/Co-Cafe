@@ -5,7 +5,7 @@ import {
 } from 'recharts'
 import {
   Plus, TrendingUp, DollarSign, ShoppingBag, Trash2,
-  BookOpen, Clock, ChevronDown, ChevronRight, Play, Square,
+  BookOpen, Clock, ChevronDown, ChevronRight,
 } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import NavBar from '../components/NavBar'
@@ -21,26 +21,12 @@ function fmtTime(iso) {
 }
 
 function fmtDate(iso) {
-  const d    = new Date(iso)
-  const now  = new Date()
-  const yes  = new Date(now); yes.setDate(yes.getDate() - 1)
+  const d   = new Date(iso)
+  const now = new Date()
+  const yes = new Date(now); yes.setDate(yes.getDate() - 1)
   if (d.toDateString() === now.toDateString()) return 'Today'
   if (d.toDateString() === yes.toDateString()) return 'Yesterday'
   return d.toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' })
-}
-
-function fmtDuration(startIso, endIso) {
-  const ms   = (endIso ? new Date(endIso) : new Date()) - new Date(startIso)
-  const h    = Math.floor(ms / 3600000)
-  const m    = Math.floor((ms % 3600000) / 60000)
-  if (h === 0) return `${m}m`
-  if (m === 0) return `${h}h`
-  return `${h}h ${m}m`
-}
-
-function fmtDateTime(iso) {
-  const d = new Date(iso)
-  return `${fmtDate(iso)} · ${fmtTime(iso)}`
 }
 
 // ── Data helpers ──────────────────────────────────────────────────────────────
@@ -114,7 +100,7 @@ function TransactionList({ sales, onDelete }) {
   )
 }
 
-function ShiftCharts({ sales }) {
+function DayCharts({ sales }) {
   const barData = useMemo(() => hourlyBarData(sales), [sales])
   const catData = useMemo(() => catPieData(sales),    [sales])
 
@@ -170,20 +156,18 @@ function ShiftCharts({ sales }) {
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 export default function Sales() {
-  const { shifts, activeShift, startShift, endShift, deleteSale, deleteShift } = useApp()
+  const { shifts, activeShift, isOpen, deleteSale, deleteShift } = useApp()
   const [showSaleModal,  setShowSaleModal]  = useState(false)
   const [showMenuModal,  setShowMenuModal]  = useState(false)
-  const [confirmEnd,     setConfirmEnd]     = useState(false)
   const [expandedShifts, setExpandedShifts] = useState({})
 
-  const pastShifts  = useMemo(() => [...shifts].filter(s => s.endedAt).reverse(), [shifts])
+  const todayStr  = new Date().toDateString()
+  const pastShifts = useMemo(
+    () => [...shifts].filter(s => new Date(s.startedAt).toDateString() !== todayStr).reverse(),
+    [shifts, todayStr]
+  )
   const activeStats = useMemo(() => activeShift ? calcStats(activeShift.sales) : null, [activeShift])
-
-  function handleEndShift() {
-    if (!confirmEnd) { setConfirmEnd(true); return }
-    endShift()
-    setConfirmEnd(false)
-  }
+  const hasSalesToday = activeShift && activeShift.sales.length > 0
 
   function toggleShift(id) {
     setExpandedShifts(prev => ({ ...prev, [id]: !prev[id] }))
@@ -199,85 +183,53 @@ export default function Sales() {
         <div className="section-header anim-slide-up" style={{ marginTop: 'var(--s5)' }}>
           <div>
             <h2 style={{ fontFamily: 'var(--font-display)' }}>Sales</h2>
-            {activeShift && (
-              <p className="text-muted text-sm" style={{ marginTop: 4 }}>
-                {activeShift.sales.length} transaction{activeShift.sales.length !== 1 ? 's' : ''} this shift
-              </p>
-            )}
+            <p className="text-muted text-sm" style={{ marginTop: 4 }}>
+              {hasSalesToday
+                ? `${activeShift.sales.length} transaction${activeShift.sales.length !== 1 ? 's' : ''} today`
+                : 'No sales recorded today'}
+            </p>
           </div>
 
           <div style={{ display: 'flex', gap: 'var(--s2)', alignItems: 'center' }}>
             <button className="btn btn-ghost" onClick={() => setShowMenuModal(true)}>
               <BookOpen size={14} /> Menu
             </button>
-
-            {activeShift ? (
-              <>
-                <button className="btn btn-primary" onClick={() => setShowSaleModal(true)}>
-                  <Plus size={15} /> New Sale
-                </button>
-
-                {confirmEnd ? (
-                  <>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>End shift?</span>
-                    <button
-                      className="btn"
-                      style={{ background: 'var(--danger)', color: '#fff', border: 'none' }}
-                      onClick={handleEndShift}
-                    >
-                      Confirm
-                    </button>
-                    <button className="btn btn-ghost" onClick={() => setConfirmEnd(false)}>
-                      Cancel
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    className="btn btn-ghost"
-                    style={{ color: 'var(--danger)' }}
-                    onClick={handleEndShift}
-                  >
-                    <Square size={13} /> End Shift
-                  </button>
-                )}
-              </>
-            ) : (
-              <button className="btn btn-primary" onClick={startShift}>
-                <Play size={14} /> Start Shift
-              </button>
-            )}
+            <button className="btn btn-primary" onClick={() => setShowSaleModal(true)}>
+              <Plus size={15} /> New Sale
+            </button>
           </div>
         </div>
 
-        {/* ── Active shift ── */}
-        {activeShift ? (
-          <>
-            {/* Shift info bar */}
-            <div className="anim-fade-in" style={{
-              display:       'flex',
-              alignItems:    'center',
-              gap:           'var(--s3)',
-              padding:       'var(--s3) var(--s5)',
-              background:    'rgba(74,124,89,0.08)',
-              border:        '1px solid rgba(74,124,89,0.25)',
-              borderRadius:  'var(--r2)',
-              marginBottom:  'var(--s5)',
-              fontSize:      '0.85rem',
-              flexWrap:      'wrap',
-            }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--success)', flexShrink: 0 }} />
-              <span style={{ color: 'var(--success)', fontWeight: 600 }}>Shift Active</span>
-              <span style={{ color: 'var(--text-muted)' }}>·</span>
-              <span style={{ color: 'var(--text-secondary)' }}>
-                Started {fmtDateTime(activeShift.startedAt)}
-              </span>
-              <span style={{ color: 'var(--text-muted)' }}>·</span>
-              <span style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                <Clock size={12} />
-                {fmtDuration(activeShift.startedAt, null)} in
-              </span>
-            </div>
+        {/* Status bar */}
+        <div className="anim-fade-in" style={{
+          display:       'flex',
+          alignItems:    'center',
+          gap:           'var(--s3)',
+          padding:       'var(--s3) var(--s5)',
+          background:    isOpen ? 'rgba(74,124,89,0.08)' : 'rgba(184,64,64,0.06)',
+          border:        `1px solid ${isOpen ? 'rgba(74,124,89,0.25)' : 'rgba(184,64,64,0.15)'}`,
+          borderRadius:  'var(--r2)',
+          marginBottom:  'var(--s5)',
+          fontSize:      '0.85rem',
+          flexWrap:      'wrap',
+        }}>
+          <div style={{
+            width: 8, height: 8, borderRadius: '50%',
+            background: isOpen ? 'var(--success)' : 'var(--danger)',
+            flexShrink: 0,
+          }} />
+          <span style={{ color: isOpen ? 'var(--success)' : 'var(--danger)', fontWeight: 600 }}>
+            {isOpen ? 'Open' : 'Closed'}
+          </span>
+          <span style={{ color: 'var(--text-muted)' }}>·</span>
+          <span style={{ color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 4 }}>
+            <Clock size={12} /> 8:00 AM – 3:00 PM
+          </span>
+        </div>
 
+        {/* ── Today's content ── */}
+        {hasSalesToday ? (
+          <>
             {/* Stat cards */}
             <div className="grid-3 anim-slide-up" style={{ marginBottom: 'var(--s5)' }}>
               {[
@@ -300,29 +252,18 @@ export default function Sales() {
             </div>
 
             {/* Charts */}
-            {activeShift.sales.length > 0 && <ShiftCharts sales={activeShift.sales} />}
+            <DayCharts sales={activeShift.sales} />
 
             {/* Transaction log */}
             <div className="card anim-fade-in" style={{ overflow: 'hidden', marginBottom: 'var(--s4)' }}>
               <div style={{ padding: 'var(--s3) var(--s5)', background: 'var(--latte)', borderBottom: '1px solid var(--border)' }}>
                 <p style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '0.95rem' }}>Transaction Log</p>
               </div>
-
-              {activeShift.sales.length === 0 ? (
-                <div style={{ padding: 'var(--s7)', textAlign: 'center', color: 'var(--text-muted)' }}>
-                  <ShoppingBag size={32} style={{ margin: '0 auto var(--s3)', opacity: 0.3 }} />
-                  <p>No sales yet this shift.</p>
-                  <button className="btn btn-primary" style={{ marginTop: 'var(--s4)' }} onClick={() => setShowSaleModal(true)}>
-                    <Plus size={14} /> Record First Sale
-                  </button>
-                </div>
-              ) : (
-                <TransactionList sales={activeShift.sales} onDelete={deleteSale} />
-              )}
+              <TransactionList sales={activeShift.sales} onDelete={deleteSale} />
             </div>
           </>
         ) : (
-          /* ── No active shift — empty state ── */
+          /* ── No sales yet today ── */
           <div className="anim-fade-in" style={{
             display:        'flex',
             flexDirection:  'column',
@@ -333,35 +274,41 @@ export default function Sales() {
           }}>
             <div style={{
               width: 64, height: 64, borderRadius: '50%',
-              background: 'rgba(74,124,89,0.1)',
+              background: isOpen ? 'rgba(196,129,58,0.1)' : 'rgba(184,64,64,0.08)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               marginBottom: 'var(--s4)',
             }}>
-              <Play size={26} color="var(--success)" />
+              <ShoppingBag size={26} color={isOpen ? 'var(--accent)' : 'var(--danger)'} />
             </div>
-            <h3 style={{ fontFamily: 'var(--font-display)', marginBottom: 'var(--s2)' }}>No Active Shift</h3>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: 'var(--s5)', maxWidth: 300 }}>
-              Press Start Shift to begin recording sales for this session.
+            <h3 style={{ fontFamily: 'var(--font-display)', marginBottom: 'var(--s2)' }}>
+              {isOpen ? 'Ready to Record' : 'Cafe Closed'}
+            </h3>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: 'var(--s5)', maxWidth: 320 }}>
+              {isOpen
+                ? 'No sales recorded yet today. Press New Sale to get started.'
+                : 'Sales are recorded between 8:00 AM and 3:00 PM. Check back when the cafe opens.'}
             </p>
-            <button
-              className="btn btn-primary"
-              style={{ fontSize: '1rem', padding: 'var(--s3) var(--s6)' }}
-              onClick={startShift}
-            >
-              <Play size={16} /> Start Shift
-            </button>
+            {isOpen && (
+              <button
+                className="btn btn-primary"
+                style={{ fontSize: '1rem', padding: 'var(--s3) var(--s6)' }}
+                onClick={() => setShowSaleModal(true)}
+              >
+                <Plus size={16} /> Record First Sale
+              </button>
+            )}
           </div>
         )}
 
-        {/* ── Shift history ── */}
+        {/* ── Day history ── */}
         {pastShifts.length > 0 && (
-          <div style={{ marginTop: activeShift ? 'var(--s4)' : 0 }} className="anim-fade-in">
+          <div style={{ marginTop: hasSalesToday ? 'var(--s4)' : 0 }} className="anim-fade-in">
             <p style={{
               fontFamily: 'var(--font-display)', fontWeight: 600,
               fontSize: '1rem', color: 'var(--text-secondary)',
               marginBottom: 'var(--s3)',
             }}>
-              Shift History
+              Day History
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--s2)' }}>
@@ -396,8 +343,8 @@ export default function Sales() {
                           {fmtDate(shift.startedAt)}
                         </span>
                         <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem', marginLeft: 'var(--s2)' }}>
-                          {fmtTime(shift.startedAt)} – {fmtTime(shift.endedAt)}
-                          <span style={{ marginLeft: 6, opacity: 0.7 }}>· {fmtDuration(shift.startedAt, shift.endedAt)}</span>
+                          8:00 AM – 3:00 PM
+                          <span style={{ marginLeft: 6, opacity: 0.7 }}>· 7h</span>
                         </span>
                       </div>
 
@@ -472,17 +419,19 @@ export default function Sales() {
                             <TransactionList sales={shift.sales} onDelete={null} />
                           </div>
                         ) : (
-                          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: 'var(--s4)' }}>No sales recorded this shift.</p>
+                          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: 'var(--s4)' }}>
+                            No sales recorded this day.
+                          </p>
                         )}
 
-                        {/* Delete shift */}
+                        {/* Delete day */}
                         <div style={{ borderTop: '1px solid var(--border)', paddingTop: 'var(--s3)', display: 'flex', justifyContent: 'flex-end' }}>
                           <button
                             className="btn btn-ghost"
                             style={{ color: 'var(--danger)', fontSize: '0.8rem' }}
                             onClick={() => deleteShift(shift.id)}
                           >
-                            <Trash2 size={13} /> Delete Shift
+                            <Trash2 size={13} /> Delete Day
                           </button>
                         </div>
                       </div>
