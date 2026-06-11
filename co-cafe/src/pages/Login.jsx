@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { Lock, Coffee } from 'lucide-react'
 
 // ── Change these credentials to whatever you want ──────────────────────────
-const ADMIN_USERNAME = 'co-cafe'
-const ADMIN_PASSWORD = 'cocafe2026'
+const ADMIN_USERNAME = 'cocafe2026'
+const ADMIN_PASSWORD = '710torbayroad'
 // ──────────────────────────────────────────────────────────────────────────
 
 export default function Login({ onLogin }) {

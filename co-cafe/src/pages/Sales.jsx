@@ -160,6 +160,7 @@ export default function Sales() {
   const [showSaleModal,  setShowSaleModal]  = useState(false)
   const [showMenuModal,  setShowMenuModal]  = useState(false)
   const [expandedShifts, setExpandedShifts] = useState({})
+  const [showTxLog,      setShowTxLog]      = useState(true)
 
   const todayStr  = new Date().toDateString()
   const pastShifts = useMemo(
@@ -256,10 +257,31 @@ export default function Sales() {
 
             {/* Transaction log */}
             <div className="card anim-fade-in" style={{ overflow: 'hidden', marginBottom: 'var(--s4)' }}>
-              <div style={{ padding: 'var(--s3) var(--s5)', background: 'var(--latte)', borderBottom: '1px solid var(--border)' }}>
-                <p style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '0.95rem' }}>Transaction Log</p>
-              </div>
-              <TransactionList sales={activeShift.sales} onDelete={deleteSale} />
+              <button
+                onClick={() => setShowTxLog(v => !v)}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center',
+                  gap: 'var(--s3)', padding: 'var(--s3) var(--s5)',
+                  background: 'var(--latte)', border: 'none',
+                  cursor: 'pointer', textAlign: 'left',
+                  transition: 'background var(--t-fast)',
+                  borderBottom: showTxLog ? '1px solid var(--border)' : 'none',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = '#dfd0bc'}
+                onMouseLeave={e => e.currentTarget.style.background = 'var(--latte)'}
+              >
+                {showTxLog
+                  ? <ChevronDown  size={14} color="var(--text-muted)" />
+                  : <ChevronRight size={14} color="var(--text-muted)" />
+                }
+                <p style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '0.95rem', flex: 1 }}>
+                  Transaction Log
+                </p>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  {activeShift.sales.length} sale{activeShift.sales.length !== 1 ? 's' : ''}
+                </span>
+              </button>
+              {showTxLog && <TransactionList sales={activeShift.sales} onDelete={deleteSale} />}
             </div>
           </>
         ) : (
