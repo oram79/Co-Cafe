@@ -1,5 +1,10 @@
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Package, BarChart2, BookOpen } from 'lucide-react'
+import { Package, BarChart2, BookOpen, LogOut } from 'lucide-react'
+
+function logout() {
+  try { localStorage.removeItem('cc_authed') } catch {}
+  window.location.reload()
+}
 
 const NAV_LINKS = [
   { path: '/inventory', icon: Package,  label: 'Inventory' },
@@ -52,7 +57,7 @@ export default function NavBar() {
         </span>
       </button>
 
-      {/* Nav links */}
+      {/* Nav links + logout */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--s1)' }}>
         {NAV_LINKS.map(({ path, icon: Icon, label }) => {
           const active = pathname === path
@@ -97,6 +102,45 @@ export default function NavBar() {
             </button>
           )
         })}
+
+        {/* Logout */}
+        <button
+          onClick={logout}
+          title="Sign out"
+          style={{
+            display:      'flex',
+            alignItems:   'center',
+            gap:          'var(--s2)',
+            padding:      'var(--s2) var(--s3)',
+            marginLeft:   'var(--s2)',
+            background:   'transparent',
+            border:       '1px solid rgba(255,255,255,0.12)',
+            borderRadius: 'var(--r2)',
+            cursor:       'pointer',
+            transition:   'all 0.15s ease',
+            color:        'var(--fog)',
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background   = 'rgba(184,64,64,0.15)'
+            e.currentTarget.style.borderColor  = 'rgba(184,64,64,0.35)'
+            e.currentTarget.style.color        = '#e07070'
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background   = 'transparent'
+            e.currentTarget.style.borderColor  = 'rgba(255,255,255,0.12)'
+            e.currentTarget.style.color        = 'var(--fog)'
+          }}
+        >
+          <LogOut size={14} />
+          <span style={{
+            fontFamily:    'var(--font-display)',
+            fontSize:      '0.82rem',
+            fontWeight:    500,
+            letterSpacing: '0.03em',
+          }}>
+            Sign Out
+          </span>
+        </button>
       </div>
     </nav>
   )
