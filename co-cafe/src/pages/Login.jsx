@@ -127,7 +127,7 @@ export default function Login({ onLogin }) {
                 type="password"
                 value={password}
                 onChange={e => { setPassword(e.target.value); setError('') }}
-                placeholder="Enter"
+                placeholder="Enter Password"
                 autoComplete="current-password"
               />
             </div>
