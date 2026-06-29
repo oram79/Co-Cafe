@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { BookOpen, Sun, Moon, RotateCcw, Pencil, Plus, Trash2, Check, GripVertical, Coffee, Wrench, Phone, Maximize2, X } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { BookOpen, Sun, Moon, RotateCcw, Pencil, Plus, Trash2, Check, GripVertical, Wrench, Phone, Maximize2, X, ClipboardList } from 'lucide-react'
 import NavBar from '../components/NavBar'
 import { useApp } from '../context/AppContext'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
@@ -150,7 +150,7 @@ export default function Guidebook() {
           display: 'grid',
           gridTemplateColumns: 'repeat(2, 1fr)',
           gap: 'var(--s4)',
-          alignItems: 'start',
+          alignItems: 'stretch',
         }}>
 
           {/* — Checklist card (condensed) — */}
@@ -251,9 +251,9 @@ export default function Guidebook() {
             </div>
           </div>
 
-          {/* — Coming soon cards — */}
-          <ComingSoonCard icon={Coffee} title="Espresso Dialing-In Guide" />
-          <ComingSoonCard icon={Wrench} title="Cleaning & Maintenance Log" />
+          {/* — Order list card — */}
+          <OrderListCard />
+          <CleaningCard />
           <ComingSoonCard icon={Phone} title="Emergency Contacts & Procedures" />
 
         </div>
@@ -392,6 +392,411 @@ export default function Guidebook() {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function OrderListCard() {
+  const { orderList, setOrderList } = useApp()
+  const [draft, setDraft]           = useState('')
+  const inputRef                    = useRef(null)
+
+  function addItem() {
+    const text = draft.trim()
+    if (!text) return
+    setOrderList(prev => [...prev, { id: crypto.randomUUID(), text, checked: false }])
+    setDraft('')
+    inputRef.current?.focus()
+  }
+
+  function toggleItem(id) {
+    setOrderList(prev => prev.map(i => i.id === id ? { ...i, checked: !i.checked } : i))
+  }
+
+  function removeItem(id) {
+    setOrderList(prev => prev.filter(i => i.id !== id))
+  }
+
+  function resetList() {
+    setOrderList([])
+  }
+
+  return (
+    <div style={{
+      background:    'var(--surface)',
+      borderRadius:  'var(--r3)',
+      border:        '1px solid var(--border)',
+      boxShadow:     'var(--shadow-sm)',
+      overflow:      'hidden',
+      display:       'flex',
+      flexDirection: 'column',
+      height:        '100%',
+    }}>
+      {/* Header */}
+      <div style={{
+        padding:        'var(--s4) var(--s5)',
+        borderBottom:   '1px solid var(--border)',
+        display:        'flex',
+        alignItems:     'center',
+        justifyContent: 'space-between',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--s2)' }}>
+          <ClipboardList size={16} color="var(--mahogany)" />
+          <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Order List</span>
+          {orderList.length > 0 && (
+            <span style={{
+              fontSize: '0.7rem', fontWeight: 700,
+              background: 'var(--latte)', color: 'var(--text-secondary)',
+              padding: '2px 7px', borderRadius: 'var(--r-pill)',
+            }}>
+              {orderList.length}
+            </span>
+          )}
+        </div>
+        {orderList.length > 0 && (
+          <button
+            onClick={resetList}
+            title="Clear list"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              padding: '4px 10px',
+              borderRadius: 'var(--r2)',
+              border: '1px solid var(--border)',
+              background: 'transparent',
+              color: 'var(--text-muted)',
+              fontSize: '0.72rem',
+              cursor: 'pointer',
+              transition: 'all var(--t-fast)',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = 'var(--danger)'; e.currentTarget.style.borderColor = 'rgba(184,64,64,0.4)' }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.borderColor = 'var(--border)' }}
+          >
+            <RotateCcw size={11} /> Reset
+          </button>
+        )}
+      </div>
+
+      {/* Add input */}
+      <div style={{ display: 'flex', gap: 'var(--s2)', padding: 'var(--s3) var(--s4)', borderBottom: '1px solid var(--border)' }}>
+        <input
+          ref={inputRef}
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && addItem()}
+          placeholder="Add item to order…"
+          style={{
+            flex: 1,
+            padding: 'var(--s2) var(--s3)',
+            borderRadius: 'var(--r2)',
+            border: '1px solid var(--border-strong)',
+            background: 'var(--bg)',
+            color: 'var(--text-primary)',
+            fontSize: '0.875rem',
+            outline: 'none',
+          }}
+        />
+        <button
+          onClick={addItem}
+          style={{
+            padding: 'var(--s2) var(--s3)',
+            borderRadius: 'var(--r2)',
+            border: 'none',
+            background: 'var(--mahogany)',
+            color: 'white',
+            cursor: 'pointer',
+            display: 'flex', alignItems: 'center',
+            transition: 'opacity var(--t-fast)',
+          }}
+          onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
+          onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+        >
+          <Plus size={15} />
+        </button>
+      </div>
+
+      {/* List */}
+      <div style={{ flex: 1, overflowY: 'auto' }}>
+        {orderList.length === 0 ? (
+          <div style={{ padding: 'var(--s6) var(--s5)', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+            Your order list is empty.
+          </div>
+        ) : (
+          orderList.map((item, idx) => (
+            <div
+              key={item.id}
+              style={{
+                display:     'flex',
+                alignItems:  'center',
+                gap:         'var(--s3)',
+                padding:     'var(--s3) var(--s4)',
+                borderBottom: idx < orderList.length - 1 ? '1px solid var(--border)' : 'none',
+                background:  item.checked ? 'rgba(74,124,89,0.04)' : 'transparent',
+              }}
+            >
+              <button
+                onClick={() => toggleItem(item.id)}
+                style={{
+                  width: 20, height: 20,
+                  borderRadius: 6,
+                  border: item.checked ? 'none' : '2px solid var(--fog)',
+                  background: item.checked ? 'var(--success)' : 'transparent',
+                  cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                  transition: 'all var(--t-fast)',
+                }}
+              >
+                {item.checked && <Check size={11} color="white" strokeWidth={3} />}
+              </button>
+              <span style={{
+                flex: 1,
+                fontSize: '0.875rem',
+                color: item.checked ? 'var(--text-muted)' : 'var(--text-primary)',
+                textDecoration: item.checked ? 'line-through' : 'none',
+                transition: 'all var(--t-fast)',
+              }}>
+                {item.text}
+              </span>
+              <button
+                onClick={() => removeItem(item.id)}
+                style={{
+                  width: 24, height: 24,
+                  borderRadius: 'var(--r1)',
+                  border: 'none',
+                  background: 'transparent',
+                  color: 'var(--fog)',
+                  cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  opacity: 0.5,
+                  transition: 'opacity var(--t-fast)',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.color = 'var(--danger)' }}
+                onMouseLeave={e => { e.currentTarget.style.opacity = '0.5'; e.currentTarget.style.color = 'var(--fog)' }}
+              >
+                <X size={13} />
+              </button>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  )
+}
+
+const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
+const DAY_MAP = { 0: 'Sun', 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri', 6: 'Sat' }
+
+function TaskInline({ task, onToggle, onEdit }) {
+  const [editing, setEditing] = useState(false)
+  const [text,    setText]    = useState(task.text)
+
+  function commit() {
+    const val = text.trim()
+    onEdit(val || task.text)
+    setEditing(false)
+  }
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 }}>
+      <button
+        onClick={onToggle}
+        style={{
+          width: 16, height: 16, flexShrink: 0,
+          borderRadius: 4,
+          border: task.done ? 'none' : '2px solid var(--fog)',
+          background: task.done ? 'var(--success)' : 'transparent',
+          cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          transition: 'all var(--t-fast)',
+        }}
+      >
+        {task.done && <Check size={9} color="white" strokeWidth={3} />}
+      </button>
+
+      {editing ? (
+        <input
+          value={text}
+          autoFocus
+          onChange={e => setText(e.target.value)}
+          onBlur={commit}
+          onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') { setText(task.text); setEditing(false) } }}
+          style={{
+            flex: 1, minWidth: 0,
+            padding: '1px 4px',
+            borderRadius: 'var(--r1)',
+            border: '1px solid var(--border-strong)',
+            background: 'var(--bg)',
+            color: 'var(--text-primary)',
+            fontSize: '0.75rem',
+            outline: 'none',
+          }}
+        />
+      ) : (
+        <span
+          onClick={() => { setEditing(true); setText(task.text) }}
+          title="Click to edit"
+          style={{
+            flex: 1, minWidth: 0,
+            fontSize: '0.75rem',
+            color: task.done ? 'var(--text-muted)' : 'var(--text-secondary)',
+            textDecoration: task.done ? 'line-through' : 'none',
+            cursor: 'text',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            transition: 'color var(--t-fast)',
+          }}
+        >
+          {task.text}
+        </span>
+      )}
+    </div>
+  )
+}
+
+function CleaningCard() {
+  const { cleaningSchedule, setCleaningSchedule } = useApp()
+  const todayDay = DAY_MAP[new Date().getDay()]
+
+  function toggleTask(day, id) {
+    setCleaningSchedule(prev => ({
+      ...prev,
+      [day]: prev[day].map(t => t.id === id ? { ...t, done: !t.done } : t),
+    }))
+  }
+
+  function updateText(day, id, text) {
+    setCleaningSchedule(prev => ({
+      ...prev,
+      [day]: prev[day].map(t => t.id === id ? { ...t, text } : t),
+    }))
+  }
+
+  function resetAll() {
+    setCleaningSchedule(prev =>
+      Object.fromEntries(
+        Object.entries(prev).map(([day, tasks]) => [day, tasks.map(t => ({ ...t, done: false }))])
+      )
+    )
+  }
+
+  const totalDone  = DAYS.flatMap(d => cleaningSchedule[d] || []).filter(t => t.done).length
+  const totalTasks = DAYS.flatMap(d => cleaningSchedule[d] || []).length
+
+  return (
+    <div style={{
+      background:    'var(--surface)',
+      borderRadius:  'var(--r3)',
+      border:        '1px solid var(--border)',
+      boxShadow:     'var(--shadow-sm)',
+      overflow:      'hidden',
+      display:       'flex',
+      flexDirection: 'column',
+      height:        '100%',
+    }}>
+      {/* Header */}
+      <div style={{
+        padding:        'var(--s4) var(--s5)',
+        borderBottom:   '1px solid var(--border)',
+        display:        'flex',
+        alignItems:     'center',
+        justifyContent: 'space-between',
+        flexShrink:     0,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--s2)' }}>
+          <Wrench size={16} color="var(--mahogany)" />
+          <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Weekly Cleaning Schedule</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--s3)' }}>
+          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+            {totalDone}/{totalTasks}
+          </span>
+          <button
+            onClick={resetAll}
+            title="Reset all checkboxes"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              padding: '4px 10px',
+              borderRadius: 'var(--r2)',
+              border: '1px solid var(--border)',
+              background: 'transparent',
+              color: 'var(--text-muted)',
+              fontSize: '0.72rem',
+              cursor: 'pointer',
+              transition: 'all var(--t-fast)',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = 'var(--danger)'; e.currentTarget.style.borderColor = 'rgba(184,64,64,0.4)' }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.borderColor = 'var(--border)' }}
+          >
+            <RotateCcw size={11} /> Reset
+          </button>
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      <div style={{ padding: '0 var(--s5) var(--s2)', paddingTop: 'var(--s2)', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+        <div style={{ height: 3, background: 'var(--latte)', borderRadius: 99 }}>
+          <div style={{
+            height: '100%',
+            width: `${totalTasks ? (totalDone / totalTasks) * 100 : 0}%`,
+            background: totalDone === totalTasks && totalTasks > 0 ? 'var(--success)' : 'var(--mahogany)',
+            borderRadius: 99,
+            transition: 'width 0.3s ease, background 0.3s ease',
+          }} />
+        </div>
+      </div>
+
+      {/* Day rows */}
+      <div style={{ flex: 1, overflowY: 'auto' }}>
+        {DAYS.map((day, idx) => {
+          const tasks   = cleaningSchedule[day] || []
+          const isToday = day === todayDay
+          return (
+            <div
+              key={day}
+              style={{
+                display:      'flex',
+                alignItems:   'center',
+                gap:          'var(--s3)',
+                padding:      'var(--s3) var(--s4)',
+                borderBottom: idx < DAYS.length - 1 ? '1px solid var(--border)' : 'none',
+                background:   isToday ? 'rgba(107,58,36,0.05)' : 'transparent',
+              }}
+            >
+              {/* Day label */}
+              <span style={{
+                width:      36,
+                flexShrink: 0,
+                fontSize:   '0.72rem',
+                fontWeight: isToday ? 700 : 500,
+                color:      isToday ? 'var(--mahogany)' : 'var(--text-muted)',
+                letterSpacing: '0.04em',
+              }}>
+                {day}
+                {isToday && (
+                  <span style={{ display: 'block', fontSize: '0.6rem', fontWeight: 400, color: 'var(--mahogany)', opacity: 0.7 }}>today</span>
+                )}
+              </span>
+
+              {/* Divider */}
+              <div style={{ width: 1, height: 28, background: 'var(--border)', flexShrink: 0 }} />
+
+              {/* Two tasks */}
+              {tasks.map((task, ti) => (
+                <>
+                  <TaskInline
+                    key={task.id}
+                    task={task}
+                    onToggle={() => toggleTask(day, task.id)}
+                    onEdit={text => updateText(day, task.id, text)}
+                  />
+                  {ti === 0 && <div style={{ width: 1, height: 28, background: 'var(--border)', flexShrink: 0 }} />}
+                </>
+              ))}
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }

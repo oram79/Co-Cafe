@@ -10,6 +10,14 @@ export function AppProvider({ children }) {
   const [menu,        setMenu]        = useLocalStorage('cc_menu', [])
   const [shifts,      setShifts]      = useLocalStorage('cc_shifts', [])
   const [checklists,  setChecklists]  = useLocalStorage('co-cafe-checklists', { open: [], close: [] })
+  const [orderList,        setOrderList]        = useLocalStorage('cc_orderlist', [])
+  const [cleaningSchedule, setCleaningSchedule] = useLocalStorage('cc_cleaning', {
+    Mon: [{ id: 'mon-1', text: 'Task 1', done: false }, { id: 'mon-2', text: 'Task 2', done: false }],
+    Tue: [{ id: 'tue-1', text: 'Task 1', done: false }, { id: 'tue-2', text: 'Task 2', done: false }],
+    Wed: [{ id: 'wed-1', text: 'Task 1', done: false }, { id: 'wed-2', text: 'Task 2', done: false }],
+    Thu: [{ id: 'thu-1', text: 'Task 1', done: false }, { id: 'thu-2', text: 'Task 2', done: false }],
+    Fri: [{ id: 'fri-1', text: 'Task 1', done: false }, { id: 'fri-2', text: 'Task 2', done: false }],
+  })
 
   const _now        = new Date()
   const _todayStr   = _now.toDateString()
@@ -98,6 +106,8 @@ export function AppProvider({ children }) {
       menu,
       shifts,
       checklists,
+      orderList,
+      cleaningSchedule,
     }
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
     const url  = URL.createObjectURL(blob)
@@ -117,6 +127,8 @@ export function AppProvider({ children }) {
         if (Array.isArray(data.menu))      setMenu(data.menu)
         if (Array.isArray(data.shifts))    setShifts(data.shifts)
         if (data.checklists && typeof data.checklists === 'object') setChecklists(data.checklists)
+        if (Array.isArray(data.orderList)) setOrderList(data.orderList)
+        if (data.cleaningSchedule && typeof data.cleaningSchedule === 'object') setCleaningSchedule(data.cleaningSchedule)
       } catch {
         alert('Could not read the file — make sure it is a valid Co. Cafe backup.')
       }
@@ -136,7 +148,10 @@ export function AppProvider({ children }) {
   }
 
   const value = {
-    inventory, menu, shifts, activeShift, isOpen, checklists, setChecklists,
+    inventory, menu, shifts, activeShift, isOpen,
+    checklists, setChecklists,
+    orderList, setOrderList,
+    cleaningSchedule, setCleaningSchedule,
     addInventoryItem, updateInventoryItem, deleteInventoryItem, adjustQuantity,
     addMenuItem, updateMenuItem, deleteMenuItem,
     recordSale, deleteSale, deleteShift,
