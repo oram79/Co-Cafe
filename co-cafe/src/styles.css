@@ -413,13 +413,39 @@ p  { line-height: 1.65; }
 .delay-4 { animation-delay: 240ms; }
 .delay-5 { animation-delay: 300ms; }
 
+/* Named structural grids (responsive via media queries) */
+.nav-bar {
+  padding: var(--s3) var(--s6);
+}
+.guidebook-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--s4);
+  align-items: stretch;
+}
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: var(--s4);
+  margin-bottom: var(--s5);
+}
+
 /* Responsive */
 @media (max-width: 900px) {
   .page { padding: var(--s4); }
   .grid-4 { grid-template-columns: repeat(2, 1fr); }
   .grid-3 { grid-template-columns: repeat(2, 1fr); }
 }
+@media (max-width: 768px) {
+  .guidebook-grid { grid-template-columns: 1fr; }
+  .charts-grid    { grid-template-columns: 1fr; }
+  .grid-4         { grid-template-columns: repeat(2, 1fr); }
+}
 @media (max-width: 600px) {
+  .page { padding: var(--s3) var(--s4); }
+  .nav-bar { padding: var(--s3) var(--s4); }
+  .nav-label { display: none; }
   .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
-  .modal-box { padding: var(--s4); }
+  .modal-backdrop { padding: var(--s3); }
+  .modal-box { padding: var(--s4); border-radius: var(--r3); }
 }

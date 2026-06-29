@@ -130,7 +130,7 @@ function DayCharts({ sales }) {
   const totalCat = catData.reduce((s, d) => s + d.value, 0)
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 'var(--s4)', marginBottom: 'var(--s5)' }}>
+    <div className="charts-grid">
 
       {/* Bar chart */}
       <div className="card" style={{ padding: 'var(--s5)' }}>

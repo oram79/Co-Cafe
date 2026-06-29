@@ -17,11 +17,10 @@ export default function NavBar() {
   const { pathname }   = useLocation()
 
   return (
-    <nav style={{
+    <nav className="nav-bar" style={{
       display:        'flex',
       alignItems:     'center',
       justifyContent: 'space-between',
-      padding:        'var(--s3) var(--s6)',
       background:     'var(--espresso)',
       borderBottom:   '1px solid rgba(255,255,255,0.08)',
       position:       'sticky',
@@ -91,7 +90,7 @@ export default function NavBar() {
               }}
             >
               <Icon size={15} />
-              <span style={{
+              <span className="nav-label" style={{
                 fontFamily:    'var(--font-display)',
                 fontSize:      '0.82rem',
                 fontWeight:    active ? 600 : 500,
@@ -132,7 +131,7 @@ export default function NavBar() {
           }}
         >
           <LogOut size={14} />
-          <span style={{
+          <span className="nav-label" style={{
             fontFamily:    'var(--font-display)',
             fontSize:      '0.82rem',
             fontWeight:    500,

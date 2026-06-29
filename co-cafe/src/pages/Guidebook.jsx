@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { BookOpen, Sun, Moon, RotateCcw, Pencil, Plus, Trash2, Check, GripVertical, Wrench, Phone, Maximize2, X, ClipboardList } from 'lucide-react'
+import { BookOpen, Sun, Moon, RotateCcw, Pencil, Plus, Trash2, Check, GripVertical, Wrench, ChefHat, ChevronLeft, Maximize2, X, ClipboardList } from 'lucide-react'
 import NavBar from '../components/NavBar'
 import { useApp } from '../context/AppContext'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
@@ -146,12 +146,7 @@ export default function Guidebook() {
         </div>
 
         {/* 2×2 grid */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(2, 1fr)',
-          gap: 'var(--s4)',
-          alignItems: 'stretch',
-        }}>
+        <div className="guidebook-grid">
 
           {/* — Checklist card (condensed) — */}
           <div style={{
@@ -235,7 +230,6 @@ export default function Guidebook() {
                   style={{
                     width: '100%',
                     padding: 'var(--s3) var(--s5)',
-                    borderTop: '1px solid var(--border)',
                     background: 'transparent',
                     border: 'none',
                     borderTop: '1px solid var(--border)',
@@ -254,7 +248,7 @@ export default function Guidebook() {
           {/* — Order list card — */}
           <OrderListCard />
           <CleaningCard />
-          <ComingSoonCard icon={Phone} title="Emergency Contacts & Procedures" />
+          <RecipeBookCard />
 
         </div>
       </div>
@@ -801,44 +795,469 @@ function CleaningCard() {
   )
 }
 
-function ComingSoonCard({ icon: Icon, title }) {
+const RECIPE_CATEGORIES = ['Syrup', 'Food', 'Drink', 'Other']
+
+function useMobile(breakpoint = 700) {
+  const [mobile, setMobile] = useState(() => window.innerWidth < breakpoint)
+  useEffect(() => {
+    const fn = () => setMobile(window.innerWidth < breakpoint)
+    window.addEventListener('resize', fn)
+    return () => window.removeEventListener('resize', fn)
+  }, [breakpoint])
+  return mobile
+}
+
+function RecipeBookCard() {
+  const { recipes, setRecipes } = useApp()
+  const [expanded, setExpanded] = useState(false)
+
+  const preview = recipes.slice(0, 4)
+  const hiddenCount = Math.max(0, recipes.length - 4)
+
   return (
-    <div style={{
-      background: 'var(--surface)',
-      borderRadius: 'var(--r3)',
-      border: '1px solid var(--border)',
-      boxShadow: 'var(--shadow-sm)',
-      overflow: 'hidden',
-    }}>
+    <>
       <div style={{
-        padding: 'var(--s4) var(--s5)',
-        borderBottom: '1px solid var(--border)',
+        background: 'var(--surface)',
+        borderRadius: 'var(--r3)',
+        border: '1px solid var(--border)',
+        boxShadow: 'var(--shadow-sm)',
+        overflow: 'hidden',
         display: 'flex',
-        alignItems: 'center',
-        gap: 'var(--s3)',
+        flexDirection: 'column',
       }}>
-        <Icon size={16} color="var(--mahogany)" />
-        <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>{title}</span>
-      </div>
-      <div style={{
-        padding: 'var(--s6) var(--s5)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: 120,
-      }}>
-        <span style={{
-          fontSize: '0.68rem',
-          fontWeight: 700,
-          textTransform: 'uppercase',
-          letterSpacing: '0.1em',
-          color: 'var(--fog)',
-          background: 'var(--latte)',
-          padding: '3px 10px',
-          borderRadius: 'var(--r-pill)',
+        <div style={{
+          padding: 'var(--s4) var(--s5)',
+          borderBottom: '1px solid var(--border)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
         }}>
-          Coming soon
-        </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--s2)' }}>
+            <ChefHat size={16} color="var(--mahogany)" />
+            <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Recipe Book</span>
+            {recipes.length > 0 && (
+              <span style={{
+                fontSize: '0.7rem', fontWeight: 700,
+                background: 'var(--latte)', color: 'var(--text-secondary)',
+                padding: '2px 7px', borderRadius: 'var(--r-pill)',
+              }}>
+                {recipes.length}
+              </span>
+            )}
+          </div>
+          <IconBtn onClick={() => setExpanded(true)} title="Open recipe book">
+            <Maximize2 size={14} />
+          </IconBtn>
+        </div>
+
+        <div>
+          {recipes.length === 0 ? (
+            <div style={{ padding: 'var(--s5)', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+              No recipes yet — open to add some.
+            </div>
+          ) : (
+            preview.map((recipe, idx) => (
+              <div
+                key={recipe.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: 'var(--s3) var(--s5)',
+                  borderBottom: idx < preview.length - 1 ? '1px solid var(--border)' : 'none',
+                  gap: 'var(--s3)',
+                }}
+              >
+                <span style={{ fontSize: '0.875rem', color: 'var(--text-primary)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {recipe.name}
+                </span>
+                <span style={{
+                  fontSize: '0.65rem', fontWeight: 700,
+                  background: 'var(--latte)', color: 'var(--text-muted)',
+                  padding: '2px 7px', borderRadius: 'var(--r-pill)',
+                  flexShrink: 0,
+                  textTransform: 'uppercase', letterSpacing: '0.04em',
+                }}>
+                  {recipe.category}
+                </span>
+              </div>
+            ))
+          )}
+          {hiddenCount > 0 && (
+            <button
+              onClick={() => setExpanded(true)}
+              style={{
+                width: '100%',
+                padding: 'var(--s3) var(--s5)',
+                background: 'transparent',
+                border: 'none',
+                borderTop: '1px solid var(--border)',
+                cursor: 'pointer',
+                fontSize: '0.8rem',
+                color: 'var(--mahogany)',
+                textAlign: 'center',
+              }}
+            >
+              +{hiddenCount} more
+            </button>
+          )}
+        </div>
+      </div>
+
+      {expanded && (
+        <RecipeModal
+          recipes={recipes}
+          setRecipes={setRecipes}
+          onClose={() => setExpanded(false)}
+        />
+      )}
+    </>
+  )
+}
+
+function RecipeModal({ recipes, setRecipes, onClose }) {
+  const isMobile = useMobile()
+  const [filterCat, setFilterCat] = useState('All')
+  const [selectedId, setSelectedId] = useState(null)
+  const [mode, setMode] = useState('view')
+  const [form, setForm] = useState({ name: '', category: 'Syrup', notes: '' })
+
+  const showingDetail = selectedId !== null || mode !== 'view'
+  const filtered = filterCat === 'All' ? recipes : recipes.filter(r => r.category === filterCat)
+  const selected = recipes.find(r => r.id === selectedId) ?? null
+
+  function startAdd() {
+    setMode('add')
+    setSelectedId(null)
+    setForm({ name: '', category: filterCat === 'All' ? 'Syrup' : filterCat, notes: '' })
+  }
+
+  function startEdit() {
+    if (!selected) return
+    setForm({ name: selected.name, category: selected.category, notes: selected.notes })
+    setMode('edit')
+  }
+
+  function saveAdd() {
+    const name = form.name.trim()
+    if (!name) return
+    const id = `recipe-${Date.now()}`
+    setRecipes(prev => [...prev, { id, name, category: form.category, notes: form.notes }])
+    setSelectedId(id)
+    setMode('view')
+  }
+
+  function saveEdit() {
+    const name = form.name.trim()
+    if (!name) return
+    setRecipes(prev => prev.map(r => r.id === selectedId ? { ...r, name, category: form.category, notes: form.notes } : r))
+    setMode('view')
+  }
+
+  function deleteRecipe() {
+    const idx = recipes.findIndex(r => r.id === selectedId)
+    const remaining = recipes.filter(r => r.id !== selectedId)
+    setRecipes(remaining)
+    setSelectedId(remaining[Math.min(idx, remaining.length - 1)]?.id ?? null)
+    setMode('view')
+  }
+
+  function goBack() { setSelectedId(null); setMode('view') }
+
+  const pillStyle = (active) => ({
+    padding: '2px 8px',
+    borderRadius: 'var(--r-pill)',
+    border: 'none',
+    background: active ? 'var(--mahogany)' : 'var(--latte)',
+    color: active ? 'white' : 'var(--text-secondary)',
+    fontSize: '0.7rem', fontWeight: 600,
+    cursor: 'pointer',
+    transition: 'all var(--t-fast)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.04em',
+  })
+
+  return (
+    <div
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+      style={{
+        position: 'fixed', inset: 0,
+        background: 'rgba(26,15,10,0.45)',
+        zIndex: 200,
+        display: 'flex',
+        alignItems: isMobile ? 'flex-end' : 'center',
+        justifyContent: 'center',
+        padding: isMobile ? 0 : 'var(--s5)',
+      }}
+    >
+      <div style={{
+        width: '100%',
+        maxWidth: isMobile ? '100%' : 700,
+        height: isMobile ? '93%' : 'auto',
+        maxHeight: isMobile ? '93%' : '85vh',
+        background: 'var(--surface)',
+        borderRadius: isMobile ? 'var(--r3) var(--r3) 0 0' : 'var(--r3)',
+        boxShadow: 'var(--shadow-xl)',
+        display: 'flex', flexDirection: 'column',
+        overflow: 'hidden',
+      }}>
+        {/* Header */}
+        <div style={{
+          padding: 'var(--s4) var(--s5)',
+          borderBottom: '1px solid var(--border)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          flexShrink: 0,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--s2)' }}>
+            {isMobile && showingDetail ? (
+              <IconBtn onClick={goBack} title="Back to list">
+                <ChevronLeft size={14} />
+              </IconBtn>
+            ) : (
+              <ChefHat size={16} color="var(--mahogany)" />
+            )}
+            <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Recipe Book</span>
+          </div>
+          <IconBtn onClick={onClose} title="Close"><X size={14} /></IconBtn>
+        </div>
+
+        {/* Body: two-pane on desktop, single-pane on mobile */}
+        <div style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
+
+          {/* Left pane — list (hidden on mobile when detail is showing) */}
+          {(!isMobile || !showingDetail) && (
+            <div style={{
+              width: isMobile ? '100%' : 210,
+              flexShrink: 0,
+              borderRight: isMobile ? 'none' : '1px solid var(--border)',
+              display: 'flex', flexDirection: 'column',
+              overflow: 'hidden',
+            }}>
+              {/* Category filter */}
+              <div style={{
+                padding: 'var(--s2) var(--s3)',
+                borderBottom: '1px solid var(--border)',
+                display: 'flex', flexWrap: 'wrap', gap: 4,
+                flexShrink: 0,
+              }}>
+                {['All', ...RECIPE_CATEGORIES].map(cat => (
+                  <button key={cat} onClick={() => setFilterCat(cat)} style={pillStyle(filterCat === cat)}>
+                    {cat}
+                  </button>
+                ))}
+              </div>
+
+              {/* Recipe list */}
+              <div style={{ flex: 1, overflowY: 'auto' }}>
+                {filtered.length === 0 ? (
+                  <div style={{ padding: 'var(--s4)', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                    {recipes.length === 0 ? 'No recipes yet.' : 'None in this category.'}
+                  </div>
+                ) : filtered.map((recipe, idx) => (
+                  <button
+                    key={recipe.id}
+                    onClick={() => { setSelectedId(recipe.id); setMode('view') }}
+                    style={{
+                      width: '100%',
+                      padding: 'var(--s3) var(--s4)',
+                      background: selectedId === recipe.id ? 'var(--surface-2)' : 'transparent',
+                      border: 'none',
+                      borderBottom: idx < filtered.length - 1 ? '1px solid var(--border)' : 'none',
+                      borderLeft: `2px solid ${selectedId === recipe.id ? 'var(--mahogany)' : 'transparent'}`,
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      display: 'flex', flexDirection: 'column', gap: 2,
+                      transition: 'background var(--t-fast)',
+                    }}
+                  >
+                    <span style={{ fontSize: '0.85rem', fontWeight: selectedId === recipe.id ? 600 : 400, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {recipe.name}
+                    </span>
+                    <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      {recipe.category}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Add button */}
+              <div style={{ padding: 'var(--s3)', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
+                <button
+                  onClick={startAdd}
+                  style={{
+                    width: '100%',
+                    padding: 'var(--s2) var(--s3)',
+                    borderRadius: 'var(--r2)',
+                    border: 'none',
+                    background: 'var(--mahogany)',
+                    color: 'white',
+                    cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--s2)',
+                    fontSize: '0.8rem', fontWeight: 600,
+                    transition: 'opacity var(--t-fast)',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
+                  onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                >
+                  <Plus size={13} /> New Recipe
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Right pane — detail / form (hidden on mobile when list is showing) */}
+          {(!isMobile || showingDetail) && (
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
+              {mode === 'add' || mode === 'edit' ? (
+                <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--s5)', display: 'flex', flexDirection: 'column', gap: 'var(--s4)' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: 'var(--s1)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Name
+                    </label>
+                    <input
+                      value={form.name}
+                      onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                      placeholder="e.g. Vanilla Syrup, Bagel Toast"
+                      autoFocus
+                      style={{
+                        width: '100%', boxSizing: 'border-box',
+                        padding: 'var(--s2) var(--s3)',
+                        borderRadius: 'var(--r2)',
+                        border: '1px solid var(--border-strong)',
+                        background: 'var(--bg)',
+                        color: 'var(--text-primary)',
+                        fontSize: '0.95rem', fontWeight: 600,
+                        outline: 'none', fontFamily: 'inherit',
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: 'var(--s2)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Category
+                    </label>
+                    <div style={{ display: 'flex', gap: 'var(--s2)', flexWrap: 'wrap' }}>
+                      {RECIPE_CATEGORIES.map(cat => (
+                        <button
+                          key={cat}
+                          onClick={() => setForm(f => ({ ...f, category: cat }))}
+                          style={{
+                            padding: 'var(--s1) var(--s3)',
+                            borderRadius: 'var(--r-pill)',
+                            border: '1px solid',
+                            borderColor: form.category === cat ? 'var(--mahogany)' : 'var(--border)',
+                            background: form.category === cat ? 'rgba(107,58,36,0.1)' : 'transparent',
+                            color: form.category === cat ? 'var(--mahogany)' : 'var(--text-muted)',
+                            cursor: 'pointer',
+                            fontSize: '0.8rem', fontWeight: form.category === cat ? 600 : 400,
+                            transition: 'all var(--t-fast)',
+                          }}
+                        >
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: 'var(--s1)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Instructions / Notes
+                    </label>
+                    <textarea
+                      value={form.notes}
+                      onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                      placeholder="Ingredients, steps, temperatures, times..."
+                      rows={10}
+                      style={{
+                        width: '100%', boxSizing: 'border-box',
+                        padding: 'var(--s3)',
+                        borderRadius: 'var(--r2)',
+                        border: '1px solid var(--border-strong)',
+                        background: 'var(--bg)',
+                        color: 'var(--text-primary)',
+                        fontSize: '0.875rem', lineHeight: 1.6,
+                        resize: 'vertical', outline: 'none',
+                        fontFamily: 'inherit', minHeight: 160,
+                      }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 'var(--s2)', justifyContent: 'flex-end' }}>
+                    <button
+                      onClick={() => { setMode('view'); if (mode === 'add') goBack() }}
+                      style={{
+                        padding: 'var(--s2) var(--s4)',
+                        borderRadius: 'var(--r2)',
+                        border: '1px solid var(--border)',
+                        background: 'transparent',
+                        color: 'var(--text-muted)',
+                        cursor: 'pointer', fontSize: '0.875rem',
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={mode === 'add' ? saveAdd : saveEdit}
+                      disabled={!form.name.trim()}
+                      style={{
+                        padding: 'var(--s2) var(--s4)',
+                        borderRadius: 'var(--r2)',
+                        border: 'none',
+                        background: form.name.trim() ? 'var(--mahogany)' : 'var(--latte)',
+                        color: form.name.trim() ? 'white' : 'var(--fog)',
+                        cursor: form.name.trim() ? 'pointer' : 'not-allowed',
+                        fontSize: '0.875rem', fontWeight: 600,
+                        transition: 'all var(--t-fast)',
+                      }}
+                    >
+                      {mode === 'add' ? 'Add Recipe' : 'Save Changes'}
+                    </button>
+                  </div>
+                </div>
+              ) : selected ? (
+                <>
+                  <div style={{
+                    padding: 'var(--s4) var(--s5)',
+                    borderBottom: '1px solid var(--border)',
+                    flexShrink: 0,
+                    display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 'var(--s3)',
+                  }}>
+                    <div>
+                      <h3 style={{ margin: 0, marginBottom: 2, fontSize: '1.05rem', fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>
+                        {selected.name}
+                      </h3>
+                      <span style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--mahogany)', opacity: 0.8 }}>
+                        {selected.category}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 'var(--s2)', flexShrink: 0 }}>
+                      <IconBtn onClick={startEdit} title="Edit recipe"><Pencil size={14} /></IconBtn>
+                      <IconBtn onClick={deleteRecipe} title="Delete recipe"><Trash2 size={14} /></IconBtn>
+                    </div>
+                  </div>
+                  <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--s5)' }}>
+                    {selected.notes ? (
+                      <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: 1.75, color: 'var(--text-primary)', whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>
+                        {selected.notes}
+                      </p>
+                    ) : (
+                      <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', fontStyle: 'italic' }}>
+                        No notes yet — click Edit to add instructions.
+                      </p>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 'var(--s3)', padding: 'var(--s6)', color: 'var(--text-muted)' }}>
+                  <ChefHat size={32} color="var(--fog)" />
+                  <p style={{ margin: 0, fontSize: '0.875rem', textAlign: 'center' }}>
+                    {recipes.length === 0 ? 'Add your first recipe using the button below.' : 'Select a recipe from the list.'}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

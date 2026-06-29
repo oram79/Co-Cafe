@@ -11,6 +11,7 @@ export function AppProvider({ children }) {
   const [shifts,      setShifts]      = useLocalStorage('cc_shifts', [])
   const [checklists,  setChecklists]  = useLocalStorage('co-cafe-checklists', { open: [], close: [] })
   const [orderList,        setOrderList]        = useLocalStorage('cc_orderlist', [])
+  const [recipes,          setRecipes]          = useLocalStorage('cc_recipes', [])
   const [cleaningSchedule, setCleaningSchedule] = useLocalStorage('cc_cleaning', {
     Mon: [{ id: 'mon-1', text: 'Task 1', done: false }, { id: 'mon-2', text: 'Task 2', done: false }],
     Tue: [{ id: 'tue-1', text: 'Task 1', done: false }, { id: 'tue-2', text: 'Task 2', done: false }],
@@ -108,6 +109,7 @@ export function AppProvider({ children }) {
       checklists,
       orderList,
       cleaningSchedule,
+      recipes,
     }
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
     const url  = URL.createObjectURL(blob)
@@ -129,6 +131,7 @@ export function AppProvider({ children }) {
         if (data.checklists && typeof data.checklists === 'object') setChecklists(data.checklists)
         if (Array.isArray(data.orderList)) setOrderList(data.orderList)
         if (data.cleaningSchedule && typeof data.cleaningSchedule === 'object') setCleaningSchedule(data.cleaningSchedule)
+        if (Array.isArray(data.recipes)) setRecipes(data.recipes)
       } catch {
         alert('Could not read the file — make sure it is a valid Co. Cafe backup.')
       }
@@ -152,6 +155,7 @@ export function AppProvider({ children }) {
     checklists, setChecklists,
     orderList, setOrderList,
     cleaningSchedule, setCleaningSchedule,
+    recipes, setRecipes,
     addInventoryItem, updateInventoryItem, deleteInventoryItem, adjustQuantity,
     addMenuItem, updateMenuItem, deleteMenuItem,
     recordSale, deleteSale, deleteShift,
