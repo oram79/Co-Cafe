@@ -32,7 +32,7 @@ const NAV_ITEMS = [
 
 export default function Landing() {
   const navigate    = useNavigate()
-  const { exportData, importData, isGuest } = useApp()
+  const { exportData, importData } = useApp()
   const fileInputRef = useRef(null)
 
   return (
@@ -116,7 +116,7 @@ export default function Landing() {
         </p>
 
         {/* Export / Import — admin only */}
-        <div className="anim-fade-in delay-2" style={{ display: 'flex', justifyContent: 'center', gap: 'var(--s2)', marginBottom: 'var(--s5)', visibility: isGuest ? 'hidden' : 'visible' }}>
+        <div className="anim-fade-in delay-2" style={{ display: 'flex', justifyContent: 'center', gap: 'var(--s2)', marginBottom: 'var(--s5)' }}>
           <input
             ref={fileInputRef}
             type="file"
