@@ -4,6 +4,8 @@ import { Lock, Coffee } from 'lucide-react'
 // ── Change these credentials to whatever you want ──────────────────────────
 const ADMIN_USERNAME = 'cocafe2026'
 const ADMIN_PASSWORD = '710torbayroad'
+const GUEST_USERNAME = 'Guest123'
+const GUEST_PASSWORD = 'Password123'
 // ──────────────────────────────────────────────────────────────────────────
 
 export default function Login({ onLogin }) {
@@ -20,12 +22,19 @@ export default function Login({ onLogin }) {
 
     setTimeout(() => {
       if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-        onLogin()
+        onLogin('admin')
+      } else if (username === GUEST_USERNAME && password === GUEST_PASSWORD) {
+        onLogin('guest')
       } else {
         setError('Incorrect username or password.')
         setLoading(false)
       }
     }, 350)
+  }
+
+  function loginAsGuest() {
+    setLoading(true)
+    setTimeout(() => onLogin('guest'), 250)
   }
 
   return (
@@ -164,14 +173,46 @@ export default function Login({ onLogin }) {
           </form>
         </div>
 
+        {/* Guest access */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--s3)', marginTop: 'var(--s4)' }}>
+          <div style={{ flex: 1, height: 1, background: 'rgba(184,169,154,0.2)' }} />
+          <span style={{ fontSize: '0.72rem', color: 'rgba(184,169,154,0.45)', whiteSpace: 'nowrap' }}>or</span>
+          <div style={{ flex: 1, height: 1, background: 'rgba(184,169,154,0.2)' }} />
+        </div>
+
+        <button
+          onClick={loginAsGuest}
+          disabled={loading}
+          style={{
+            display:        'flex',
+            alignItems:     'center',
+            justifyContent: 'center',
+            gap:            6,
+            width:          '100%',
+            marginTop:      'var(--s3)',
+            padding:        'var(--s3) var(--s4)',
+            borderRadius:   'var(--r2)',
+            border:         '1px solid rgba(184,169,154,0.2)',
+            background:     'rgba(184,169,154,0.06)',
+            color:          'rgba(184,169,154,0.6)',
+            fontSize:       '0.875rem',
+            cursor:         loading ? 'not-allowed' : 'pointer',
+            transition:     'all 0.15s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.color = 'rgba(184,169,154,0.9)'; e.currentTarget.style.borderColor = 'rgba(184,169,154,0.4)' }}
+          onMouseLeave={e => { e.currentTarget.style.color = 'rgba(184,169,154,0.6)'; e.currentTarget.style.borderColor = 'rgba(184,169,154,0.2)' }}
+        >
+          Continue as Guest
+        </button>
+
         <p style={{
           textAlign:  'center',
-          marginTop:  'var(--s4)',
-          fontSize:   '0.82rem',
-          color:      'rgba(184,169,154,0.6)',
+          marginTop:  'var(--s3)',
+          fontSize:   '0.75rem',
+          color:      'rgba(184,169,154,0.35)',
           lineHeight: 1.5,
         }}>
-          Unauthorized access is unavailable at this time.
+          Guest access is view-only — no changes can be made.
         </p>
 
       </div>

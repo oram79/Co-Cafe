@@ -5,7 +5,8 @@ const TAX_RATE = 0.15
 
 const AppContext = createContext(null)
 
-export function AppProvider({ children }) {
+export function AppProvider({ children, role = 'admin' }) {
+  const isGuest = role === 'guest'
   const [inventory,   setInventory]   = useLocalStorage('cc_inventory', [])
   const [menu,        setMenu]        = useLocalStorage('cc_menu', [])
   const [shifts,      setShifts]      = useLocalStorage('cc_shifts', [])
@@ -151,6 +152,7 @@ export function AppProvider({ children }) {
   }
 
   const value = {
+    isGuest,
     inventory, menu, shifts, activeShift, isOpen,
     checklists, setChecklists,
     orderList, setOrderList,

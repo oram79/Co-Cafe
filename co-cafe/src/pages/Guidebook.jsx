@@ -9,7 +9,7 @@ import { CSS } from '@dnd-kit/utilities'
 const PREVIEW_LIMIT = 4
 
 export default function Guidebook() {
-  const { checklists: lists, setChecklists: setLists } = useApp()
+  const { checklists: lists, setChecklists: setLists, isGuest } = useApp()
   const [tab, setTab] = useState('open')
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState('')
@@ -290,16 +290,20 @@ export default function Guidebook() {
             }}>
               <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Open & Close Checklists</span>
               <div style={{ display: 'flex', gap: 'var(--s2)' }}>
-                <IconBtn onClick={reset} title="Reset checklist">
-                  <RotateCcw size={14} />
-                </IconBtn>
-                <IconBtn
-                  onClick={() => setEditing(e => !e)}
-                  title={editing ? 'Done editing' : 'Edit tasks'}
-                  active={editing}
-                >
-                  <Pencil size={14} />
-                </IconBtn>
+                {!isGuest && (
+                  <>
+                    <IconBtn onClick={reset} title="Reset checklist">
+                      <RotateCcw size={14} />
+                    </IconBtn>
+                    <IconBtn
+                      onClick={() => setEditing(e => !e)}
+                      title={editing ? 'Done editing' : 'Edit tasks'}
+                      active={editing}
+                    >
+                      <Pencil size={14} />
+                    </IconBtn>
+                  </>
+                )}
                 <IconBtn onClick={() => setExpanded(false)} title="Close">
                   <X size={14} />
                 </IconBtn>
@@ -391,7 +395,7 @@ export default function Guidebook() {
 }
 
 function OrderListCard() {
-  const { orderList, setOrderList } = useApp()
+  const { orderList, setOrderList, isGuest } = useApp()
   const [draft, setDraft]           = useState('')
   const inputRef                    = useRef(null)
 
@@ -447,7 +451,7 @@ function OrderListCard() {
             </span>
           )}
         </div>
-        {orderList.length > 0 && (
+        {!isGuest && orderList.length > 0 && (
           <button
             onClick={resetList}
             title="Clear list"
@@ -470,43 +474,45 @@ function OrderListCard() {
         )}
       </div>
 
-      {/* Add input */}
-      <div style={{ display: 'flex', gap: 'var(--s2)', padding: 'var(--s3) var(--s4)', borderBottom: '1px solid var(--border)' }}>
-        <input
-          ref={inputRef}
-          value={draft}
-          onChange={e => setDraft(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && addItem()}
-          placeholder="Add item to order…"
-          style={{
-            flex: 1,
-            padding: 'var(--s2) var(--s3)',
-            borderRadius: 'var(--r2)',
-            border: '1px solid var(--border-strong)',
-            background: 'var(--bg)',
-            color: 'var(--text-primary)',
-            fontSize: '0.875rem',
-            outline: 'none',
-          }}
-        />
-        <button
-          onClick={addItem}
-          style={{
-            padding: 'var(--s2) var(--s3)',
-            borderRadius: 'var(--r2)',
-            border: 'none',
-            background: 'var(--mahogany)',
-            color: 'white',
-            cursor: 'pointer',
-            display: 'flex', alignItems: 'center',
-            transition: 'opacity var(--t-fast)',
-          }}
-          onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
-          onMouseLeave={e => e.currentTarget.style.opacity = '1'}
-        >
-          <Plus size={15} />
-        </button>
-      </div>
+      {/* Add input — admin only */}
+      {!isGuest && (
+        <div style={{ display: 'flex', gap: 'var(--s2)', padding: 'var(--s3) var(--s4)', borderBottom: '1px solid var(--border)' }}>
+          <input
+            ref={inputRef}
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && addItem()}
+            placeholder="Add item to order…"
+            style={{
+              flex: 1,
+              padding: 'var(--s2) var(--s3)',
+              borderRadius: 'var(--r2)',
+              border: '1px solid var(--border-strong)',
+              background: 'var(--bg)',
+              color: 'var(--text-primary)',
+              fontSize: '0.875rem',
+              outline: 'none',
+            }}
+          />
+          <button
+            onClick={addItem}
+            style={{
+              padding: 'var(--s2) var(--s3)',
+              borderRadius: 'var(--r2)',
+              border: 'none',
+              background: 'var(--mahogany)',
+              color: 'white',
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center',
+              transition: 'opacity var(--t-fast)',
+            }}
+            onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
+            onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+          >
+            <Plus size={15} />
+          </button>
+        </div>
+      )}
 
       {/* List */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
@@ -551,24 +557,26 @@ function OrderListCard() {
               }}>
                 {item.text}
               </span>
-              <button
-                onClick={() => removeItem(item.id)}
-                style={{
-                  width: 24, height: 24,
-                  borderRadius: 'var(--r1)',
-                  border: 'none',
-                  background: 'transparent',
-                  color: 'var(--fog)',
-                  cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  opacity: 0.5,
-                  transition: 'opacity var(--t-fast)',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.color = 'var(--danger)' }}
-                onMouseLeave={e => { e.currentTarget.style.opacity = '0.5'; e.currentTarget.style.color = 'var(--fog)' }}
-              >
-                <X size={13} />
-              </button>
+              {!isGuest && (
+                <button
+                  onClick={() => removeItem(item.id)}
+                  style={{
+                    width: 24, height: 24,
+                    borderRadius: 'var(--r1)',
+                    border: 'none',
+                    background: 'transparent',
+                    color: 'var(--fog)',
+                    cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    opacity: 0.5,
+                    transition: 'opacity var(--t-fast)',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.color = 'var(--danger)' }}
+                  onMouseLeave={e => { e.currentTarget.style.opacity = '0.5'; e.currentTarget.style.color = 'var(--fog)' }}
+                >
+                  <X size={13} />
+                </button>
+              )}
             </div>
           ))
         )}
@@ -649,7 +657,7 @@ function TaskInline({ task, onToggle, onEdit }) {
 }
 
 function CleaningCard() {
-  const { cleaningSchedule, setCleaningSchedule } = useApp()
+  const { cleaningSchedule, setCleaningSchedule, isGuest } = useApp()
   const todayDay = DAY_MAP[new Date().getDay()]
 
   function toggleTask(day, id) {
@@ -705,25 +713,27 @@ function CleaningCard() {
           <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
             {totalDone}/{totalTasks}
           </span>
-          <button
-            onClick={resetAll}
-            title="Reset all checkboxes"
-            style={{
-              display: 'flex', alignItems: 'center', gap: 4,
-              padding: '4px 10px',
-              borderRadius: 'var(--r2)',
-              border: '1px solid var(--border)',
-              background: 'transparent',
-              color: 'var(--text-muted)',
-              fontSize: '0.72rem',
-              cursor: 'pointer',
-              transition: 'all var(--t-fast)',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.color = 'var(--danger)'; e.currentTarget.style.borderColor = 'rgba(184,64,64,0.4)' }}
-            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.borderColor = 'var(--border)' }}
-          >
-            <RotateCcw size={11} /> Reset
-          </button>
+          {!isGuest && (
+            <button
+              onClick={resetAll}
+              title="Reset all checkboxes"
+              style={{
+                display: 'flex', alignItems: 'center', gap: 4,
+                padding: '4px 10px',
+                borderRadius: 'var(--r2)',
+                border: '1px solid var(--border)',
+                background: 'transparent',
+                color: 'var(--text-muted)',
+                fontSize: '0.72rem',
+                cursor: 'pointer',
+                transition: 'all var(--t-fast)',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.color = 'var(--danger)'; e.currentTarget.style.borderColor = 'rgba(184,64,64,0.4)' }}
+              onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.borderColor = 'var(--border)' }}
+            >
+              <RotateCcw size={11} /> Reset
+            </button>
+          )}
         </div>
       </div>
 
@@ -808,7 +818,7 @@ function useMobile(breakpoint = 700) {
 }
 
 function RecipeBookCard() {
-  const { recipes, setRecipes } = useApp()
+  const { recipes, setRecipes, isGuest } = useApp()
   const [expanded, setExpanded] = useState(false)
 
   const preview = recipes.slice(0, 4)
@@ -908,6 +918,7 @@ function RecipeBookCard() {
         <RecipeModal
           recipes={recipes}
           setRecipes={setRecipes}
+          isGuest={isGuest}
           onClose={() => setExpanded(false)}
         />
       )}
@@ -915,7 +926,7 @@ function RecipeBookCard() {
   )
 }
 
-function RecipeModal({ recipes, setRecipes, onClose }) {
+function RecipeModal({ recipes, setRecipes, isGuest, onClose }) {
   const isMobile = useMobile()
   const [filterCat, setFilterCat] = useState('All')
   const [selectedId, setSelectedId] = useState(null)
@@ -1080,28 +1091,30 @@ function RecipeModal({ recipes, setRecipes, onClose }) {
                 ))}
               </div>
 
-              {/* Add button */}
-              <div style={{ padding: 'var(--s3)', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
-                <button
-                  onClick={startAdd}
-                  style={{
-                    width: '100%',
-                    padding: 'var(--s2) var(--s3)',
-                    borderRadius: 'var(--r2)',
-                    border: 'none',
-                    background: 'var(--mahogany)',
-                    color: 'white',
-                    cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--s2)',
-                    fontSize: '0.8rem', fontWeight: 600,
-                    transition: 'opacity var(--t-fast)',
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
-                  onMouseLeave={e => e.currentTarget.style.opacity = '1'}
-                >
-                  <Plus size={13} /> New Recipe
-                </button>
-              </div>
+              {/* Add button — admin only */}
+              {!isGuest && (
+                <div style={{ padding: 'var(--s3)', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
+                  <button
+                    onClick={startAdd}
+                    style={{
+                      width: '100%',
+                      padding: 'var(--s2) var(--s3)',
+                      borderRadius: 'var(--r2)',
+                      border: 'none',
+                      background: 'var(--mahogany)',
+                      color: 'white',
+                      cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--s2)',
+                      fontSize: '0.8rem', fontWeight: 600,
+                      transition: 'opacity var(--t-fast)',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
+                    onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                  >
+                    <Plus size={13} /> New Recipe
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -1230,10 +1243,12 @@ function RecipeModal({ recipes, setRecipes, onClose }) {
                         {selected.category}
                       </span>
                     </div>
-                    <div style={{ display: 'flex', gap: 'var(--s2)', flexShrink: 0 }}>
-                      <IconBtn onClick={startEdit} title="Edit recipe"><Pencil size={14} /></IconBtn>
-                      <IconBtn onClick={deleteRecipe} title="Delete recipe"><Trash2 size={14} /></IconBtn>
-                    </div>
+                    {!isGuest && (
+                      <div style={{ display: 'flex', gap: 'var(--s2)', flexShrink: 0 }}>
+                        <IconBtn onClick={startEdit} title="Edit recipe"><Pencil size={14} /></IconBtn>
+                        <IconBtn onClick={deleteRecipe} title="Delete recipe"><Trash2 size={14} /></IconBtn>
+                      </div>
+                    )}
                   </div>
                   <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--s5)' }}>
                     {selected.notes ? (

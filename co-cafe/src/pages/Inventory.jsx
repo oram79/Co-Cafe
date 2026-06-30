@@ -23,7 +23,7 @@ function sortItems(items, sort) {
 }
 
 export default function Inventory() {
-  const { inventory, adjustQuantity } = useApp()
+  const { inventory, adjustQuantity, isGuest } = useApp()
   const [search,       setSearch]       = useState('')
   const [sort,         setSort]         = useState('name-asc')
   const [lowStockOnly, setLowStockOnly] = useState(false)
@@ -78,9 +78,11 @@ export default function Inventory() {
               )}
             </p>
           </div>
-          <button className="btn btn-primary" onClick={() => setShowAdd(true)}>
-            <Plus size={15} /> Add Item
-          </button>
+          {!isGuest && (
+            <button className="btn btn-primary" onClick={() => setShowAdd(true)}>
+              <Plus size={15} /> Add Item
+            </button>
+          )}
         </div>
 
         {/* Low stock banner */}
@@ -217,11 +219,11 @@ export default function Inventory() {
                             padding: 'var(--s3) var(--s5)',
                             borderTop: idx === 0 ? 'none' : '1px solid var(--border)',
                             transition: 'background var(--t-fast)',
-                            cursor: 'pointer', gap: 'var(--s4)',
+                            cursor: isGuest ? 'default' : 'pointer', gap: 'var(--s4)',
                           }}
                           onMouseEnter={e => e.currentTarget.style.background = 'var(--latte)'}
                           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                          onClick={() => setSelectedItem(item)}
+                          onClick={() => !isGuest && setSelectedItem(item)}
                         >
                           {/* Name + notes */}
                           <div style={{ flex: 1, minWidth: 0 }}>
@@ -250,14 +252,16 @@ export default function Inventory() {
                             style={{ display: 'flex', alignItems: 'center', gap: 'var(--s2)' }}
                             onClick={e => e.stopPropagation()}
                           >
-                            <button
-                              className="btn-icon"
-                              style={{ width: 28, height: 28 }}
-                              onClick={() => adjustQuantity(item.id, -1)}
-                              title="Remove one"
-                            >
-                              <Minus size={12} />
-                            </button>
+                            {!isGuest && (
+                              <button
+                                className="btn-icon"
+                                style={{ width: 28, height: 28 }}
+                                onClick={() => adjustQuantity(item.id, -1)}
+                                title="Remove one"
+                              >
+                                <Minus size={12} />
+                              </button>
+                            )}
 
                             <div style={{
                               minWidth: 52, textAlign: 'center',
@@ -270,14 +274,16 @@ export default function Inventory() {
                               </span>
                             </div>
 
-                            <button
-                              className="btn-icon"
-                              style={{ width: 28, height: 28 }}
-                              onClick={() => adjustQuantity(item.id, +1)}
-                              title="Add one"
-                            >
-                              <Plus size={12} />
-                            </button>
+                            {!isGuest && (
+                              <button
+                                className="btn-icon"
+                                style={{ width: 28, height: 28 }}
+                                onClick={() => adjustQuantity(item.id, +1)}
+                                title="Add one"
+                              >
+                                <Plus size={12} />
+                              </button>
+                            )}
                           </div>
                         </div>
                       )

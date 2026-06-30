@@ -10,12 +10,20 @@ import Login     from './pages/Login'
 function readAuth() {
   try { return localStorage.getItem('cc_authed') === 'true' } catch { return false }
 }
+function readRole() {
+  try { return localStorage.getItem('cc_role') || 'admin' } catch { return 'admin' }
+}
 
 export default function App() {
   const [authed, setAuthed] = useState(readAuth)
+  const [role,   setRole]   = useState(readRole)
 
-  function handleLogin() {
-    try { localStorage.setItem('cc_authed', 'true') } catch {}
+  function handleLogin(role = 'admin') {
+    try {
+      localStorage.setItem('cc_authed', 'true')
+      localStorage.setItem('cc_role', role)
+    } catch {}
+    setRole(role)
     setAuthed(true)
   }
 
@@ -24,7 +32,7 @@ export default function App() {
   }
 
   return (
-    <AppProvider>
+    <AppProvider role={role}>
       <BrowserRouter>
         <Routes>
           <Route path="/"          element={<Landing />}   />

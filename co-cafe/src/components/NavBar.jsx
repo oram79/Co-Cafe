@@ -1,8 +1,12 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Package, BarChart2, BookOpen, LogOut } from 'lucide-react'
+import { useApp } from '../context/AppContext'
 
 function logout() {
-  try { localStorage.removeItem('cc_authed') } catch {}
+  try {
+    localStorage.removeItem('cc_authed')
+    localStorage.removeItem('cc_role')
+  } catch {}
   window.location.reload()
 }
 
@@ -15,6 +19,7 @@ const NAV_LINKS = [
 export default function NavBar() {
   const navigate       = useNavigate()
   const { pathname }   = useLocation()
+  const { isGuest }    = useApp()
 
   return (
     <nav className="nav-bar" style={{
@@ -54,6 +59,21 @@ export default function NavBar() {
         }}>
           Co. Cafe
         </span>
+        {isGuest && (
+          <span style={{
+            fontSize:      '0.62rem',
+            fontWeight:    700,
+            textTransform: 'uppercase',
+            letterSpacing: '0.1em',
+            color:         'rgba(184,169,154,0.6)',
+            background:    'rgba(184,169,154,0.1)',
+            border:        '1px solid rgba(184,169,154,0.2)',
+            padding:       '2px 7px',
+            borderRadius:  'var(--r-pill)',
+          }}>
+            Guest
+          </span>
+        )}
       </button>
 
       {/* Nav links + logout */}

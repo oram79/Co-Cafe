@@ -312,7 +312,7 @@ function TransactionTable({ sales, onDelete }) {
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 export default function Sales() {
-  const { shifts, activeShift, isOpen, deleteSale, deleteShift } = useApp()
+  const { shifts, activeShift, isOpen, deleteSale, deleteShift, isGuest } = useApp()
   const [showSaleModal,  setShowSaleModal]  = useState(false)
   const [showMenuModal,  setShowMenuModal]  = useState(false)
   const [expandedShifts, setExpandedShifts] = useState({})
@@ -353,14 +353,16 @@ export default function Sales() {
             </div>
             <h2 style={{ fontFamily: 'var(--font-display)', lineHeight: 1 }}>Sales</h2>
           </div>
-          <div style={{ display: 'flex', gap: 'var(--s2)', alignItems: 'center' }}>
-            <button className="btn btn-ghost btn-sm" onClick={() => setShowMenuModal(true)}>
-              <BookOpen size={13} /> Menu
-            </button>
-            <button className="btn btn-primary" onClick={() => setShowSaleModal(true)}>
-              <Plus size={15} /> New Sale
-            </button>
-          </div>
+          {!isGuest && (
+            <div style={{ display: 'flex', gap: 'var(--s2)', alignItems: 'center' }}>
+              <button className="btn btn-ghost btn-sm" onClick={() => setShowMenuModal(true)}>
+                <BookOpen size={13} /> Menu
+              </button>
+              <button className="btn btn-primary" onClick={() => setShowSaleModal(true)}>
+                <Plus size={15} /> New Sale
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Status bar */}
@@ -469,7 +471,7 @@ export default function Sales() {
                 </span>
               </button>
               {showTxLog && (
-                <TransactionTable sales={activeShift.sales} onDelete={deleteSale} />
+                <TransactionTable sales={activeShift.sales} onDelete={isGuest ? null : deleteSale} />
               )}
             </div>
           </>
@@ -657,16 +659,18 @@ export default function Sales() {
                           </p>
                         )}
 
-                        {/* Delete day */}
-                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                          <button
-                            className="btn btn-ghost btn-sm"
-                            style={{ color: 'var(--danger)', borderColor: 'rgba(184,64,64,0.25)' }}
-                            onClick={() => deleteShift(shift.id)}
-                          >
-                            <Trash2 size={12} /> Delete Day
-                          </button>
-                        </div>
+                        {/* Delete day — admin only */}
+                        {!isGuest && (
+                          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            <button
+                              className="btn btn-ghost btn-sm"
+                              style={{ color: 'var(--danger)', borderColor: 'rgba(184,64,64,0.25)' }}
+                              onClick={() => deleteShift(shift.id)}
+                            >
+                              <Trash2 size={12} /> Delete Day
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
