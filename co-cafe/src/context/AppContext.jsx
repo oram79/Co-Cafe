@@ -7,13 +7,13 @@ const AppContext = createContext(null)
 
 export function AppProvider({ children, role = 'admin' }) {
   const isGuest = role === 'guest'
-  const [inventory,   setInventory]   = useLocalStorage('cc_inventory', [])
-  const [menu,        setMenu]        = useLocalStorage('cc_menu', [])
-  const [shifts,      setShifts]      = useLocalStorage('cc_shifts', [])
-  const [checklists,  setChecklists]  = useLocalStorage('co-cafe-checklists', { open: [], close: [] })
-  const [orderList,        setOrderList]        = useLocalStorage('cc_orderlist', [])
-  const [recipes,          setRecipes]          = useLocalStorage('cc_recipes', [])
-  const [cleaningSchedule, setCleaningSchedule] = useLocalStorage('cc_cleaning', {
+  const [inventory,   setInventory]   = useLocalStorage(isGuest ? 'cc_guest_inventory'  : 'cc_inventory', [])
+  const [menu,        setMenu]        = useLocalStorage(isGuest ? 'cc_guest_menu'        : 'cc_menu', [])
+  const [shifts,      setShifts]      = useLocalStorage(isGuest ? 'cc_guest_shifts'      : 'cc_shifts', [])
+  const [checklists,  setChecklists]  = useLocalStorage(isGuest ? 'cc_guest_checklists'  : 'co-cafe-checklists', { open: [], close: [] })
+  const [orderList,        setOrderList]        = useLocalStorage(isGuest ? 'cc_guest_orderlist' : 'cc_orderlist', [])
+  const [recipes,          setRecipes]          = useLocalStorage(isGuest ? 'cc_guest_recipes'   : 'cc_recipes', [])
+  const [cleaningSchedule, setCleaningSchedule] = useLocalStorage(isGuest ? 'cc_guest_cleaning'  : 'cc_cleaning', {
     Mon: [{ id: 'mon-1', text: 'Task 1', done: false }, { id: 'mon-2', text: 'Task 2', done: false }],
     Tue: [{ id: 'tue-1', text: 'Task 1', done: false }, { id: 'tue-2', text: 'Task 2', done: false }],
     Wed: [{ id: 'wed-1', text: 'Task 1', done: false }, { id: 'wed-2', text: 'Task 2', done: false }],
