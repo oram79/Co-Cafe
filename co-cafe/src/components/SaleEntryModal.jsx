@@ -69,7 +69,7 @@ export default function SaleEntryModal({ onClose }) {
 
   return (
     <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal-box" style={{ maxWidth: 680, display: 'flex', flexDirection: 'column', gap: 0, padding: 0, maxHeight: '90vh' }}>
+      <div className="modal-box" style={{ maxWidth: 680, display: 'flex', flexDirection: 'column', gap: 0, padding: 0, height: '82vh', maxHeight: '82vh' }}>
 
         {/* Header */}
         <div style={{
