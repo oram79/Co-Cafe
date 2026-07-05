@@ -1,5 +1,17 @@
 import { useState, useMemo } from 'react'
-import { Plus, Search, AlertTriangle, Minus, ChevronDown, ChevronRight, ArrowUpDown } from 'lucide-react'
+import { Plus, Search, AlertTriangle, Minus, ChevronDown, ChevronRight, ArrowUpDown, CalendarDays } from 'lucide-react'
+
+function expiryBadge(dateStr) {
+  if (!dateStr) return null
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const exp   = new Date(dateStr); exp.setHours(0, 0, 0, 0)
+  const days  = Math.round((exp - today) / 86400000)
+  if (days < 0)   return { label: 'Expired',  color: 'var(--danger)', bg: 'rgba(184,64,64,0.13)' }
+  if (days === 0) return { label: 'Today',    color: 'var(--danger)', bg: 'rgba(184,64,64,0.13)' }
+  if (days <= 3)  return { label: `${days}d`, color: 'var(--danger)', bg: 'rgba(184,64,64,0.1)'  }
+  if (days <= 7)  return { label: `${days}d`, color: 'var(--accent)', bg: 'rgba(196,129,58,0.12)' }
+  return null
+}
 import { useApp } from '../context/AppContext'
 import NavBar from '../components/NavBar'
 import ItemDetailModal from '../components/ItemDetailModal'
@@ -54,7 +66,13 @@ export default function Inventory() {
     return sorted
   }, [inventory, search, sort, lowStockOnly])
 
-  const lowStockCount = inventory.filter(i => i.quantity <= i.lowStockAt).length
+  const lowStockCount   = inventory.filter(i => i.quantity <= i.lowStockAt).length
+  const expiringCount   = inventory.filter(i => {
+    if (!i.expiryDate) return false
+    const today = new Date(); today.setHours(0, 0, 0, 0)
+    const exp   = new Date(i.expiryDate); exp.setHours(0, 0, 0, 0)
+    return Math.round((exp - today) / 86400000) <= 3
+  }).length
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
@@ -84,6 +102,24 @@ export default function Inventory() {
             </button>
           )}
         </div>
+
+        {/* Expiring soon banner */}
+        {expiringCount > 0 && (
+          <div className="anim-fade-in" style={{
+            display: 'flex', alignItems: 'center', gap: 'var(--s3)',
+            padding: 'var(--s3) var(--s4)',
+            background: 'rgba(196,129,58,0.08)',
+            border: '1px solid rgba(196,129,58,0.2)',
+            borderRadius: 'var(--r2)',
+            marginBottom: 'var(--s3)',
+            fontSize: '0.83rem',
+          }}>
+            <CalendarDays size={14} color="var(--accent)" style={{ flexShrink: 0 }} />
+            <span style={{ color: 'var(--accent-dark)', fontWeight: 700 }}>
+              {expiringCount} item{expiringCount > 1 ? 's' : ''} expiring within 3 days
+            </span>
+          </div>
+        )}
 
         {/* Low stock banner */}
         {lowStockCount > 0 && (
@@ -225,20 +261,35 @@ export default function Inventory() {
                           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                           onClick={() => !isGuest && setSelectedItem(item)}
                         >
-                          {/* Name + notes */}
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--s2)' }}>
-                              <span style={{ fontWeight: 500, fontSize: '0.9rem' }} className="truncate">
-                                {item.name}
-                              </span>
-                              {isLow && <AlertTriangle size={12} color="var(--danger)" />}
-                            </div>
-                            {item.notes && (
-                              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                                {item.notes}
-                              </span>
-                            )}
-                          </div>
+                          {/* Name + notes + expiry */}
+                          {(() => {
+                            const badge = expiryBadge(item.expiryDate)
+                            return (
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--s2)' }}>
+                                  <span style={{ fontWeight: 500, fontSize: '0.9rem' }} className="truncate">
+                                    {item.name}
+                                  </span>
+                                  {isLow && <AlertTriangle size={12} color="var(--danger)" />}
+                                  {badge && (
+                                    <span style={{
+                                      fontSize: '0.65rem', fontWeight: 700,
+                                      padding: '1px 6px', borderRadius: 'var(--r-pill)',
+                                      background: badge.bg, color: badge.color,
+                                      flexShrink: 0,
+                                    }}>
+                                      {badge.label}
+                                    </span>
+                                  )}
+                                </div>
+                                {item.notes && (
+                                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                                    {item.notes}
+                                  </span>
+                                )}
+                              </div>
+                            )
+                          })()}
 
                           {/* Price */}
                           {item.price > 0 && (

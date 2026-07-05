@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { BookOpen, Sun, Moon, RotateCcw, Pencil, Plus, Trash2, Check, GripVertical, Wrench, ChefHat, ChevronLeft, Maximize2, X, ClipboardList } from 'lucide-react'
+import { BookOpen, Sun, Moon, RotateCcw, Pencil, Plus, Trash2, Check, GripVertical, Wrench, ChefHat, ChevronLeft, ChevronRight, Maximize2, X, ClipboardList, ListChecks, FileText, Upload } from 'lucide-react'
 import NavBar from '../components/NavBar'
 import { useApp } from '../context/AppContext'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
@@ -181,7 +181,7 @@ export default function Guidebook() {
                   color: 'var(--text-muted)',
                   fontSize: '0.875rem',
                 }}>
-                  No tasks yet — open to add some.
+                  No tasks yet open to add some.
                 </div>
               )}
 
@@ -251,6 +251,12 @@ export default function Guidebook() {
           <RecipeBookCard />
 
         </div>
+
+        {/* — Quick To-Do — full width below grid */}
+        <div style={{ marginTop: 'var(--s4)' }}>
+          <TodoCard />
+        </div>
+
       </div>
 
       {/* — Expanded modal — */}
@@ -328,7 +334,7 @@ export default function Guidebook() {
                         color: 'var(--text-muted)',
                         fontSize: '0.875rem',
                       }}>
-                        No tasks yet — click <Pencil size={12} style={{ display: 'inline', marginBottom: -2 }} /> to add some.
+                        No tasks yet click <Pencil size={12} style={{ display: 'inline', marginBottom: -2 }} /> to add some.
                       </div>
                     )}
 
@@ -394,191 +400,662 @@ export default function Guidebook() {
   )
 }
 
+function companyInitials(name) {
+  return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
+}
+
+const AVATAR_COLORS = [
+  { bg: 'rgba(107,58,36,0.14)', color: 'var(--mahogany)' },
+  { bg: 'rgba(74,124,89,0.13)', color: 'var(--success)' },
+  { bg: 'rgba(196,129,58,0.15)', color: '#9a6020' },
+  { bg: 'rgba(80,80,160,0.1)',   color: '#4848a0' },
+  { bg: 'rgba(160,60,60,0.12)',  color: '#903030' },
+]
+
+function avatarColor(idx) { return AVATAR_COLORS[idx % AVATAR_COLORS.length] }
+
 function OrderListCard() {
-  const { orderList, setOrderList, isGuest } = useApp()
-  const [draft, setDraft]           = useState('')
-  const inputRef                    = useRef(null)
+  const { orders, setOrders, isGuest } = useApp()
+  const [openId,        setOpenId]        = useState(null)
+  const [addingCompany, setAddingCompany] = useState(false)
+  const [newName,       setNewName]       = useState('')
+
+  const selectedCompany = orders.find(c => c.id === openId) ?? null
+
+  function addCompany() {
+    const name = newName.trim()
+    if (!name) return
+    setOrders(prev => [...prev, {
+      id: crypto.randomUUID(), name,
+      items: [], file: null, fileName: null, fileType: null,
+    }])
+    setNewName('')
+    setAddingCompany(false)
+  }
+
+  function updateCompany(id, updates) {
+    setOrders(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c))
+  }
+
+  function removeCompany(id) {
+    setOrders(prev => prev.filter(c => c.id !== id))
+    setOpenId(null)
+  }
+
+  return (
+    <>
+      <div style={{
+        background: 'var(--surface)', borderRadius: 'var(--r3)',
+        border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)',
+        overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '100%',
+      }}>
+        {/* Header */}
+        <div style={{
+          padding: 'var(--s4) var(--s5)', borderBottom: '1px solid var(--border)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--s2)' }}>
+            <ClipboardList size={16} color="var(--mahogany)" />
+            <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Suppliers</span>
+            {orders.length > 0 && (
+              <span style={{
+                fontSize: '0.68rem', fontWeight: 700,
+                background: 'var(--latte)', color: 'var(--text-secondary)',
+                padding: '2px 7px', borderRadius: 'var(--r-pill)',
+              }}>
+                {orders.length}
+              </span>
+            )}
+          </div>
+          {!isGuest && (
+            <button
+              onClick={() => setAddingCompany(v => !v)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                padding: '5px 12px', borderRadius: 'var(--r2)',
+                border: addingCompany ? 'none' : '1px solid var(--border)',
+                background: addingCompany ? 'var(--mahogany)' : 'transparent',
+                color: addingCompany ? 'white' : 'var(--text-secondary)',
+                fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer',
+                transition: 'all var(--t-fast)',
+              }}
+            >
+              <Plus size={12} /> Add Supplier
+            </button>
+          )}
+        </div>
+
+        {/* Add company input */}
+        {addingCompany && (
+          <div style={{
+            padding: 'var(--s3) var(--s4)', borderBottom: '1px solid var(--border)',
+            background: 'var(--latte)',
+          }}>
+            <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: 'var(--s2)', fontWeight: 500 }}>
+              Supplier / company name
+            </p>
+            <div style={{ display: 'flex', gap: 'var(--s2)' }}>
+              <input
+                autoFocus
+                value={newName}
+                onChange={e => setNewName(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') addCompany()
+                  if (e.key === 'Escape') { setAddingCompany(false); setNewName('') }
+                }}
+                placeholder="e.g. Meadow Fresh Dairy"
+                style={{
+                  flex: 1, padding: 'var(--s2) var(--s3)',
+                  borderRadius: 'var(--r2)', border: '1px solid var(--border-strong)',
+                  background: 'var(--bg)', color: 'var(--text-primary)',
+                  fontSize: '0.875rem', outline: 'none',
+                }}
+              />
+              <button
+                onClick={addCompany}
+                disabled={!newName.trim()}
+                style={{
+                  padding: 'var(--s2) var(--s4)', borderRadius: 'var(--r2)',
+                  border: 'none', background: 'var(--mahogany)', color: 'white',
+                  cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600,
+                  opacity: newName.trim() ? 1 : 0.4, transition: 'opacity var(--t-fast)',
+                }}
+              >
+                Add
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Company list */}
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+          {orders.length === 0 ? (
+            <div style={{
+              padding: 'var(--s7) var(--s5)', textAlign: 'center',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--s2)',
+            }}>
+              <ClipboardList size={28} color="var(--fog)" />
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', margin: 0 }}>
+                No suppliers yet
+              </p>
+              {!isGuest && (
+                <p style={{ color: 'var(--fog)', fontSize: '0.78rem', margin: 0 }}>
+                  Add your suppliers above to get started
+                </p>
+              )}
+            </div>
+          ) : orders.map((company, idx) => {
+            const total   = company.items.length
+            const checked = company.items.filter(i => i.checked).length
+            const pending = total - checked
+            const av      = avatarColor(idx)
+            const pct     = total > 0 ? (checked / total) * 100 : 0
+
+            return (
+              <button
+                key={company.id}
+                onClick={() => setOpenId(company.id)}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center',
+                  gap: 'var(--s3)', padding: 'var(--s3) var(--s4)',
+                  background: 'transparent', border: 'none',
+                  borderTop: idx === 0 ? 'none' : '1px solid var(--border)',
+                  cursor: 'pointer', textAlign: 'left',
+                  transition: 'background var(--t-fast)',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--latte)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              >
+                {/* Avatar */}
+                <div style={{
+                  width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                  background: av.bg, color: av.color,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontWeight: 700, fontSize: '0.75rem', letterSpacing: '0.03em',
+                }}>
+                  {companyInitials(company.name)}
+                </div>
+
+                {/* Name + progress */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontWeight: 600, fontSize: '0.875rem', margin: 0 }} className="truncate">
+                    {company.name}
+                  </p>
+                  {total > 0 ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--s2)', marginTop: 4 }}>
+                      <div style={{
+                        flex: 1, height: 3, background: 'var(--border)',
+                        borderRadius: 99, overflow: 'hidden',
+                      }}>
+                        <div style={{
+                          width: `${pct}%`, height: '100%',
+                          background: pct === 100 ? 'var(--success)' : 'var(--mahogany)',
+                          borderRadius: 99, transition: 'width 0.3s ease',
+                        }} />
+                      </div>
+                      <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', flexShrink: 0 }}>
+                        {checked}/{total}
+                      </span>
+                    </div>
+                  ) : (
+                    <p style={{ fontSize: '0.72rem', color: 'var(--fog)', margin: '2px 0 0' }}>
+                      No items
+                    </p>
+                  )}
+                </div>
+
+                {/* Badges */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--s2)', flexShrink: 0 }}>
+                  {pending > 0 && (
+                    <span style={{
+                      fontSize: '0.68rem', fontWeight: 700,
+                      background: 'rgba(107,58,36,0.1)', color: 'var(--mahogany)',
+                      padding: '2px 8px', borderRadius: 'var(--r-pill)',
+                    }}>
+                      {pending} left
+                    </span>
+                  )}
+                  {pending === 0 && total > 0 && (
+                    <span style={{
+                      fontSize: '0.68rem', fontWeight: 700,
+                      background: 'rgba(74,124,89,0.1)', color: 'var(--success)',
+                      padding: '2px 8px', borderRadius: 'var(--r-pill)',
+                    }}>
+                      Done
+                    </span>
+                  )}
+                  {company.file && (
+                    <FileText size={13} color="var(--text-muted)" title="Order form attached" />
+                  )}
+                  <ChevronRight size={13} color="var(--fog)" />
+                </div>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {selectedCompany && (
+        <CompanyOrderModal
+          company={selectedCompany}
+          isGuest={isGuest}
+          onClose={() => setOpenId(null)}
+          onUpdate={updates => updateCompany(selectedCompany.id, updates)}
+          onDelete={() => removeCompany(selectedCompany.id)}
+        />
+      )}
+    </>
+  )
+}
+
+function CompanyOrderModal({ company, isGuest, onClose, onUpdate, onDelete }) {
+  const [activeTab,     setActiveTab]     = useState('items')
+  const [draft,         setDraft]         = useState('')
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const inputRef = useRef(null)
+  const fileRef  = useRef(null)
+
+  const items        = company.items
+  const total        = items.length
+  const checkedCount = items.filter(i => i.checked).length
+  const pendingCount = total - checkedCount
+  const pct          = total > 0 ? (checkedCount / total) * 100 : 0
 
   function addItem() {
     const text = draft.trim()
     if (!text) return
-    setOrderList(prev => [...prev, { id: crypto.randomUUID(), text, checked: false }])
+    onUpdate({ items: [...items, { id: crypto.randomUUID(), text, checked: false }] })
     setDraft('')
     inputRef.current?.focus()
   }
 
   function toggleItem(id) {
-    setOrderList(prev => prev.map(i => i.id === id ? { ...i, checked: !i.checked } : i))
+    onUpdate({ items: items.map(i => i.id === id ? { ...i, checked: !i.checked } : i) })
   }
 
   function removeItem(id) {
-    setOrderList(prev => prev.filter(i => i.id !== id))
+    onUpdate({ items: items.filter(i => i.id !== id) })
   }
 
-  function resetList() {
-    setOrderList([])
+  function resetItems() {
+    onUpdate({ items: items.map(i => ({ ...i, checked: false })) })
   }
+
+  function handleFile(file) {
+    const reader = new FileReader()
+    reader.onload = e => onUpdate({
+      file: e.target.result,
+      fileName: file.name,
+      fileType: file.type.startsWith('image/') ? 'image' : 'pdf',
+    })
+    reader.readAsDataURL(file)
+  }
+
+  function removeFile() {
+    onUpdate({ file: null, fileName: null, fileType: null })
+  }
+
+  const TAB_STYLE = (active) => ({
+    flex: 1, padding: 'var(--s2) var(--s3)',
+    border: 'none', background: 'transparent', cursor: 'pointer',
+    fontSize: '0.8rem', fontWeight: active ? 600 : 400,
+    color: active ? 'var(--mahogany)' : 'var(--text-muted)',
+    borderBottom: active ? '2px solid var(--mahogany)' : '2px solid transparent',
+    transition: 'all var(--t-fast)',
+  })
 
   return (
-    <div style={{
-      background:    'var(--surface)',
-      borderRadius:  'var(--r3)',
-      border:        '1px solid var(--border)',
-      boxShadow:     'var(--shadow-sm)',
-      overflow:      'hidden',
-      display:       'flex',
-      flexDirection: 'column',
-      height:        '100%',
-    }}>
-      {/* Header */}
+    <div
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+      style={{
+        position: 'fixed', inset: 0, background: 'rgba(26,15,10,0.5)',
+        zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 'var(--s5)',
+      }}
+    >
       <div style={{
-        padding:        'var(--s4) var(--s5)',
-        borderBottom:   '1px solid var(--border)',
-        display:        'flex',
-        alignItems:     'center',
-        justifyContent: 'space-between',
+        width: '100%', maxWidth: 560, maxHeight: '90vh',
+        background: 'var(--surface)', borderRadius: 'var(--r3)',
+        boxShadow: '0 24px 80px rgba(0,0,0,0.22)', display: 'flex', flexDirection: 'column',
+        overflow: 'hidden',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--s2)' }}>
-          <ClipboardList size={16} color="var(--mahogany)" />
-          <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Order List</span>
-          {orderList.length > 0 && (
-            <span style={{
-              fontSize: '0.7rem', fontWeight: 700,
-              background: 'var(--latte)', color: 'var(--text-secondary)',
-              padding: '2px 7px', borderRadius: 'var(--r-pill)',
-            }}>
-              {orderList.length}
-            </span>
-          )}
-        </div>
-        {!isGuest && orderList.length > 0 && (
-          <button
-            onClick={resetList}
-            title="Clear list"
-            style={{
-              display: 'flex', alignItems: 'center', gap: 4,
-              padding: '4px 10px',
-              borderRadius: 'var(--r2)',
-              border: '1px solid var(--border)',
-              background: 'transparent',
-              color: 'var(--text-muted)',
-              fontSize: '0.72rem',
-              cursor: 'pointer',
-              transition: 'all var(--t-fast)',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.color = 'var(--danger)'; e.currentTarget.style.borderColor = 'rgba(184,64,64,0.4)' }}
-            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.borderColor = 'var(--border)' }}
-          >
-            <RotateCcw size={11} /> Reset
-          </button>
-        )}
-      </div>
 
-      {/* Add input — admin only */}
-      {!isGuest && (
-        <div style={{ display: 'flex', gap: 'var(--s2)', padding: 'var(--s3) var(--s4)', borderBottom: '1px solid var(--border)' }}>
-          <input
-            ref={inputRef}
-            value={draft}
-            onChange={e => setDraft(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && addItem()}
-            placeholder="Add item to order…"
-            style={{
-              flex: 1,
-              padding: 'var(--s2) var(--s3)',
-              borderRadius: 'var(--r2)',
-              border: '1px solid var(--border-strong)',
-              background: 'var(--bg)',
-              color: 'var(--text-primary)',
-              fontSize: '0.875rem',
-              outline: 'none',
-            }}
-          />
-          <button
-            onClick={addItem}
-            style={{
-              padding: 'var(--s2) var(--s3)',
-              borderRadius: 'var(--r2)',
-              border: 'none',
-              background: 'var(--mahogany)',
-              color: 'white',
-              cursor: 'pointer',
-              display: 'flex', alignItems: 'center',
-              transition: 'opacity var(--t-fast)',
-            }}
-            onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
-            onMouseLeave={e => e.currentTarget.style.opacity = '1'}
-          >
-            <Plus size={15} />
-          </button>
-        </div>
-      )}
-
-      {/* List */}
-      <div style={{ flex: 1, overflowY: 'auto' }}>
-        {orderList.length === 0 ? (
-          <div style={{ padding: 'var(--s6) var(--s5)', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-            Your order list is empty.
+        {/* Modal header */}
+        <div style={{
+          padding: 'var(--s4) var(--s5)', borderBottom: '1px solid var(--border)',
+          display: 'flex', alignItems: 'center', gap: 'var(--s3)', flexShrink: 0,
+        }}>
+          <div style={{
+            width: 40, height: 40, borderRadius: 11, flexShrink: 0,
+            background: avatarColor(0).bg, color: avatarColor(0).color,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontWeight: 700, fontSize: '0.8rem',
+          }}>
+            {companyInitials(company.name)}
           </div>
-        ) : (
-          orderList.map((item, idx) => (
-            <div
-              key={item.id}
-              style={{
-                display:     'flex',
-                alignItems:  'center',
-                gap:         'var(--s3)',
-                padding:     'var(--s3) var(--s4)',
-                borderBottom: idx < orderList.length - 1 ? '1px solid var(--border)' : 'none',
-                background:  item.checked ? 'rgba(74,124,89,0.04)' : 'transparent',
-              }}
-            >
-              <button
-                onClick={() => toggleItem(item.id)}
-                style={{
-                  width: 20, height: 20,
-                  borderRadius: 6,
-                  border: item.checked ? 'none' : '2px solid var(--fog)',
-                  background: item.checked ? 'var(--success)' : 'transparent',
-                  cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0,
-                  transition: 'all var(--t-fast)',
-                }}
-              >
-                {item.checked && <Check size={11} color="white" strokeWidth={3} />}
-              </button>
-              <span style={{
-                flex: 1,
-                fontSize: '0.875rem',
-                color: item.checked ? 'var(--text-muted)' : 'var(--text-primary)',
-                textDecoration: item.checked ? 'line-through' : 'none',
-                transition: 'all var(--t-fast)',
-              }}>
-                {item.text}
-              </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontWeight: 700, fontSize: '0.95rem', margin: 0 }} className="truncate">
+              {company.name}
+            </p>
+            <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: 0 }}>
+              {total === 0
+                ? 'No items yet'
+                : pct === 100
+                  ? 'All items ordered'
+                  : `${pendingCount} of ${total} item${total !== 1 ? 's' : ''} remaining`
+              }
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: 'var(--s1)' }}>
+            {!isGuest && (
+              <IconBtn onClick={() => setConfirmDelete(true)} title="Remove supplier">
+                <Trash2 size={14} />
+              </IconBtn>
+            )}
+            <IconBtn onClick={onClose} title="Close"><X size={14} /></IconBtn>
+          </div>
+        </div>
+
+        {/* Progress bar */}
+        {total > 0 && (
+          <div style={{ height: 3, background: 'var(--border)', flexShrink: 0 }}>
+            <div style={{
+              width: `${pct}%`, height: '100%',
+              background: pct === 100 ? 'var(--success)' : 'var(--mahogany)',
+              transition: 'width 0.35s ease',
+            }} />
+          </div>
+        )}
+
+        {/* Tabs */}
+        <div style={{
+          display: 'flex', borderBottom: '1px solid var(--border)',
+          padding: '0 var(--s3)', flexShrink: 0,
+        }}>
+          <button style={TAB_STYLE(activeTab === 'items')} onClick={() => setActiveTab('items')}>
+            Order Items {total > 0 && `(${checkedCount}/${total})`}
+          </button>
+          <button style={TAB_STYLE(activeTab === 'form')} onClick={() => setActiveTab('form')}>
+            Order Form {company.file ? '· Attached' : ''}
+          </button>
+        </div>
+
+        {/* Tab content */}
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+
+          {activeTab === 'items' && (
+            <div style={{ padding: 'var(--s4) var(--s5)' }}>
+
+              {/* Add item row — admin only */}
               {!isGuest && (
-                <button
-                  onClick={() => removeItem(item.id)}
-                  style={{
-                    width: 24, height: 24,
-                    borderRadius: 'var(--r1)',
-                    border: 'none',
-                    background: 'transparent',
-                    color: 'var(--fog)',
-                    cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    opacity: 0.5,
-                    transition: 'opacity var(--t-fast)',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.color = 'var(--danger)' }}
-                  onMouseLeave={e => { e.currentTarget.style.opacity = '0.5'; e.currentTarget.style.color = 'var(--fog)' }}
-                >
-                  <X size={13} />
-                </button>
+                <div style={{
+                  display: 'flex', gap: 'var(--s2)', marginBottom: 'var(--s4)',
+                  padding: 'var(--s3)', background: 'var(--latte)',
+                  borderRadius: 'var(--r2)', border: '1px solid var(--border)',
+                }}>
+                  <input
+                    ref={inputRef}
+                    value={draft}
+                    onChange={e => setDraft(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && addItem()}
+                    placeholder="Add item to order…"
+                    autoFocus
+                    style={{
+                      flex: 1, padding: 'var(--s2) var(--s3)',
+                      borderRadius: 'var(--r2)', border: '1px solid var(--border-strong)',
+                      background: 'var(--bg)', color: 'var(--text-primary)',
+                      fontSize: '0.875rem', outline: 'none',
+                    }}
+                  />
+                  <button
+                    onClick={addItem}
+                    disabled={!draft.trim()}
+                    style={{
+                      padding: 'var(--s2) var(--s4)', borderRadius: 'var(--r2)',
+                      border: 'none', background: 'var(--mahogany)', color: 'white',
+                      cursor: draft.trim() ? 'pointer' : 'not-allowed',
+                      fontSize: '0.8rem', fontWeight: 600,
+                      opacity: draft.trim() ? 1 : 0.4,
+                      transition: 'opacity var(--t-fast)',
+                    }}
+                  >
+                    Add
+                  </button>
+                </div>
+              )}
+
+              {/* Reset link */}
+              {!isGuest && items.some(i => i.checked) && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 'var(--s2)' }}>
+                  <button
+                    onClick={resetItems}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 5,
+                      padding: '3px 10px', borderRadius: 'var(--r2)',
+                      border: '1px solid var(--border)', background: 'transparent',
+                      color: 'var(--text-muted)', fontSize: '0.72rem', cursor: 'pointer',
+                      transition: 'all var(--t-fast)',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.borderColor = 'var(--border-strong)' }}
+                    onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.borderColor = 'var(--border)' }}
+                  >
+                    <RotateCcw size={10} /> Reset all
+                  </button>
+                </div>
+              )}
+
+              {items.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: 'var(--s6) 0', color: 'var(--text-muted)' }}>
+                  <p style={{ fontSize: '0.875rem', margin: 0 }}>
+                    {isGuest ? 'No items on this order.' : 'Add items using the field above.'}
+                  </p>
+                </div>
+              ) : (
+                <div style={{
+                  border: '1px solid var(--border)', borderRadius: 'var(--r2)', overflow: 'hidden',
+                }}>
+                  {items.map((item, idx) => (
+                    <div
+                      key={item.id}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 'var(--s3)',
+                        padding: 'var(--s3) var(--s4)',
+                        borderTop: idx > 0 ? '1px solid var(--border)' : 'none',
+                        background: item.checked ? 'rgba(74,124,89,0.04)' : 'transparent',
+                        transition: 'background var(--t-fast)',
+                      }}
+                    >
+                      <button
+                        onClick={() => toggleItem(item.id)}
+                        style={{
+                          width: 22, height: 22, flexShrink: 0, borderRadius: 7,
+                          border: item.checked ? 'none' : '2px solid var(--fog)',
+                          background: item.checked ? 'var(--success)' : 'transparent',
+                          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          transition: 'all var(--t-fast)',
+                        }}
+                      >
+                        {item.checked && <Check size={12} color="white" strokeWidth={3} />}
+                      </button>
+                      <span style={{
+                        flex: 1, fontSize: '0.875rem',
+                        color: item.checked ? 'var(--text-muted)' : 'var(--text-primary)',
+                        textDecoration: item.checked ? 'line-through' : 'none',
+                        transition: 'all var(--t-fast)',
+                      }}>
+                        {item.text}
+                      </span>
+                      {!isGuest && (
+                        <button
+                          onClick={() => removeItem(item.id)}
+                          style={{
+                            width: 24, height: 24, border: 'none', background: 'transparent',
+                            color: 'var(--fog)', cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            opacity: 0, borderRadius: 'var(--r1)', transition: 'opacity var(--t-fast)',
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.color = 'var(--danger)' }}
+                          onMouseLeave={e => { e.currentTarget.style.opacity = '0'; e.currentTarget.style.color = 'var(--fog)' }}
+                          onFocus={e => e.currentTarget.style.opacity = '1'}
+                          onBlur={e => e.currentTarget.style.opacity = '0'}
+                        >
+                          <X size={13} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
-          ))
+          )}
+
+          {activeTab === 'form' && (
+            <div style={{ padding: 'var(--s4) var(--s5)' }}>
+              {company.file ? (
+                <>
+                  {company.fileName && (
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: 'var(--s2)',
+                      marginBottom: 'var(--s3)',
+                      padding: 'var(--s2) var(--s3)',
+                      background: 'var(--latte)', borderRadius: 'var(--r2)',
+                      border: '1px solid var(--border)',
+                    }}>
+                      <FileText size={13} color="var(--mahogany)" />
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', flex: 1 }} className="truncate">
+                        {company.fileName}
+                      </span>
+                      {!isGuest && (
+                        <div style={{ display: 'flex', gap: 'var(--s2)', flexShrink: 0 }}>
+                          <button
+                            onClick={() => fileRef.current?.click()}
+                            style={{
+                              padding: '3px 10px', borderRadius: 'var(--r2)',
+                              border: '1px solid var(--border)', background: 'transparent',
+                              color: 'var(--text-secondary)', fontSize: '0.72rem', cursor: 'pointer',
+                              transition: 'all var(--t-fast)',
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-strong)'}
+                            onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
+                          >
+                            Replace
+                          </button>
+                          <button
+                            onClick={removeFile}
+                            style={{
+                              padding: '3px 10px', borderRadius: 'var(--r2)',
+                              border: '1px solid transparent', background: 'transparent',
+                              color: 'var(--danger)', fontSize: '0.72rem', cursor: 'pointer',
+                              transition: 'all var(--t-fast)',
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(184,64,64,0.3)'}
+                            onMouseLeave={e => e.currentTarget.style.borderColor = 'transparent'}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <div style={{
+                    borderRadius: 'var(--r2)', overflow: 'hidden',
+                    border: '1px solid var(--border)',
+                  }}>
+                    {company.fileType === 'image'
+                      ? <img src={company.file} alt="Order form" style={{ width: '100%', display: 'block' }} />
+                      : <iframe src={company.file} title="Order form" style={{ width: '100%', height: 440, display: 'block', border: 'none' }} />
+                    }
+                  </div>
+                </>
+              ) : isGuest ? (
+                <div style={{ textAlign: 'center', padding: 'var(--s6) 0' }}>
+                  <FileText size={28} color="var(--fog)" style={{ margin: '0 auto var(--s2)' }} />
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>No order form attached.</p>
+                </div>
+              ) : (
+                <div
+                  onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderColor = 'var(--mahogany)'; e.currentTarget.style.background = 'rgba(107,58,36,0.04)' }}
+                  onDragLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'transparent' }}
+                  onDrop={e => {
+                    e.preventDefault()
+                    e.currentTarget.style.borderColor = 'var(--border)'
+                    e.currentTarget.style.background = 'transparent'
+                    const f = e.dataTransfer.files[0]
+                    if (f) handleFile(f)
+                  }}
+                  onClick={() => fileRef.current?.click()}
+                  style={{
+                    border: '2px dashed var(--border)', borderRadius: 'var(--r3)',
+                    padding: 'var(--s7) var(--s5)', textAlign: 'center',
+                    cursor: 'pointer', transition: 'all var(--t-fast)',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--mahogany)'; e.currentTarget.style.background = 'rgba(107,58,36,0.03)' }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'transparent' }}
+                >
+                  <div style={{
+                    width: 48, height: 48, borderRadius: 14,
+                    background: 'var(--latte)', border: '1px solid var(--border)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    margin: '0 auto var(--s3)',
+                  }}>
+                    <Upload size={20} color="var(--text-muted)" />
+                  </div>
+                  <p style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text-primary)', margin: '0 0 4px' }}>
+                    Attach order form
+                  </p>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', margin: 0 }}>
+                    Drop a PDF or image here, or click to browse
+                  </p>
+                  <p style={{ color: 'var(--fog)', fontSize: '0.72rem', marginTop: 6 }}>
+                    PDF · JPG · PNG
+                  </p>
+                </div>
+              )}
+
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".pdf,image/*"
+                style={{ display: 'none' }}
+                onChange={e => { if (e.target.files[0]) handleFile(e.target.files[0]); e.target.value = '' }}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Confirm delete footer */}
+        {confirmDelete && (
+          <div style={{
+            padding: 'var(--s3) var(--s5)', borderTop: '1px solid rgba(184,64,64,0.2)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            background: 'rgba(184,64,64,0.04)', flexShrink: 0,
+          }}>
+            <span style={{ fontSize: '0.83rem', color: 'var(--danger)', fontWeight: 500 }}>
+              Remove "{company.name}" permanently?
+            </span>
+            <div style={{ display: 'flex', gap: 'var(--s2)' }}>
+              <button
+                onClick={() => setConfirmDelete(false)}
+                style={{
+                  padding: '5px 14px', borderRadius: 'var(--r2)',
+                  border: '1px solid var(--border)', background: 'transparent',
+                  color: 'var(--text-secondary)', fontSize: '0.8rem', cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={onDelete}
+                style={{
+                  padding: '5px 14px', borderRadius: 'var(--r2)',
+                  border: 'none', background: 'var(--danger)', color: 'white',
+                  fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer',
+                }}
+              >
+                Remove
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </div>
@@ -863,7 +1340,7 @@ function RecipeBookCard() {
         <div>
           {recipes.length === 0 ? (
             <div style={{ padding: 'var(--s5)', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-              No recipes yet — open to add some.
+              No recipes yet open to add some.
             </div>
           ) : (
             preview.map((recipe, idx) => (
@@ -1397,6 +1874,253 @@ function SortableTask({ item, isLast, editing, onToggle, onRemove, onEdit }) {
           <Trash2 size={14} />
         </button>
       )}
+    </div>
+  )
+}
+
+function TodoCard() {
+  const { todos, setTodos, isGuest } = useApp()
+  const [draft, setDraft] = useState('')
+  const inputRef = useRef(null)
+
+  const pending   = todos.filter(t => !t.done)
+  const completed = todos.filter(t => t.done)
+
+  function addTodo() {
+    const text = draft.trim()
+    if (!text) return
+    setTodos(prev => [{ id: crypto.randomUUID(), text, done: false }, ...prev])
+    setDraft('')
+    inputRef.current?.focus()
+  }
+
+  function toggleTodo(id) {
+    setTodos(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t))
+  }
+
+  function deleteTodo(id) {
+    setTodos(prev => prev.filter(t => t.id !== id))
+  }
+
+  function clearDone() {
+    setTodos(prev => prev.filter(t => !t.done))
+  }
+
+  const rowStyle = (done, isLast) => ({
+    display:      'flex',
+    alignItems:   'center',
+    gap:          'var(--s3)',
+    padding:      'var(--s3) var(--s5)',
+    borderBottom: !isLast ? '1px solid var(--border)' : 'none',
+    background:   done ? 'rgba(74,124,89,0.03)' : 'transparent',
+    transition:   'background var(--t-fast)',
+  })
+
+  return (
+    <div style={{
+      background:    'var(--surface)',
+      borderRadius:  'var(--r3)',
+      border:        '1px solid var(--border)',
+      boxShadow:     'var(--shadow-sm)',
+      overflow:      'hidden',
+    }}>
+      {/* Header */}
+      <div style={{
+        padding:        'var(--s4) var(--s5)',
+        borderBottom:   '1px solid var(--border)',
+        display:        'flex',
+        alignItems:     'center',
+        justifyContent: 'space-between',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--s2)' }}>
+          <ListChecks size={16} color="var(--mahogany)" />
+          <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Quick To-Do</span>
+          {pending.length > 0 && (
+            <span style={{
+              fontSize: '0.7rem', fontWeight: 700,
+              background: 'rgba(107,58,36,0.12)',
+              color: 'var(--mahogany)',
+              padding: '2px 8px', borderRadius: 'var(--r-pill)',
+            }}>
+              {pending.length} left
+            </span>
+          )}
+        </div>
+        {completed.length > 0 && (
+          <button
+            onClick={clearDone}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              padding: '4px 10px',
+              borderRadius: 'var(--r2)',
+              border: '1px solid var(--border)',
+              background: 'transparent',
+              color: 'var(--text-muted)',
+              fontSize: '0.72rem',
+              cursor: 'pointer',
+              transition: 'all var(--t-fast)',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = 'var(--danger)'; e.currentTarget.style.borderColor = 'rgba(184,64,64,0.4)' }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.borderColor = 'var(--border)' }}
+          >
+            <Trash2 size={11} /> Clear done
+          </button>
+        )}
+      </div>
+
+      {/* Add input */}
+      {!isGuest && (
+        <div style={{
+          display: 'flex', gap: 'var(--s2)',
+          padding: 'var(--s3) var(--s4)',
+          borderBottom: '1px solid var(--border)',
+        }}>
+          <input
+            ref={inputRef}
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && addTodo()}
+            placeholder="Add a task and press Enter…"
+            style={{
+              flex: 1,
+              padding: 'var(--s2) var(--s3)',
+              borderRadius: 'var(--r2)',
+              border: '1px solid var(--border-strong)',
+              background: 'var(--bg)',
+              color: 'var(--text-primary)',
+              fontSize: '0.875rem',
+              outline: 'none',
+            }}
+          />
+          <button
+            onClick={addTodo}
+            style={{
+              padding: 'var(--s2) var(--s3)',
+              borderRadius: 'var(--r2)',
+              border: 'none',
+              background: 'var(--mahogany)',
+              color: 'white',
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center',
+              transition: 'opacity var(--t-fast)',
+            }}
+            onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
+            onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+          >
+            <Plus size={15} />
+          </button>
+        </div>
+      )}
+
+      {/* Empty state */}
+      {todos.length === 0 && (
+        <div style={{ padding: 'var(--s6) var(--s5)', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+          No tasks yet — add something above.
+        </div>
+      )}
+
+      {/* Pending items */}
+      {pending.map((t, idx) => (
+        <div key={t.id} style={rowStyle(false, idx === pending.length - 1 && completed.length === 0)}>
+          <button
+            onClick={() => toggleTodo(t.id)}
+            style={{
+              width: 20, height: 20, flexShrink: 0,
+              borderRadius: 6,
+              border: '2px solid var(--fog)',
+              background: 'transparent',
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'all var(--t-fast)',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--mahogany)' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--fog)' }}
+          />
+          <span style={{ flex: 1, fontSize: '0.875rem', color: 'var(--text-primary)' }}>
+            {t.text}
+          </span>
+          {!isGuest && (
+            <button
+              onClick={() => deleteTodo(t.id)}
+              style={{
+                width: 24, height: 24,
+                borderRadius: 'var(--r1)', border: 'none',
+                background: 'transparent', color: 'var(--fog)',
+                cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                opacity: 0.4,
+                transition: 'opacity var(--t-fast)',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.color = 'var(--danger)' }}
+              onMouseLeave={e => { e.currentTarget.style.opacity = '0.4'; e.currentTarget.style.color = 'var(--fog)' }}
+            >
+              <X size={13} />
+            </button>
+          )}
+        </div>
+      ))}
+
+      {/* Separator between pending and done */}
+      {pending.length > 0 && completed.length > 0 && (
+        <div style={{
+          padding: '4px var(--s5)',
+          background: 'var(--latte)',
+          borderTop: '1px solid var(--border)',
+          borderBottom: '1px solid var(--border)',
+          fontSize: '0.68rem',
+          fontWeight: 600,
+          textTransform: 'uppercase',
+          letterSpacing: '0.07em',
+          color: 'var(--text-muted)',
+        }}>
+          Completed
+        </div>
+      )}
+
+      {/* Done items */}
+      {completed.map((t, idx) => (
+        <div key={t.id} style={rowStyle(true, idx === completed.length - 1)}>
+          <button
+            onClick={() => toggleTodo(t.id)}
+            style={{
+              width: 20, height: 20, flexShrink: 0,
+              borderRadius: 6,
+              border: 'none',
+              background: 'var(--success)',
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'all var(--t-fast)',
+            }}
+          >
+            <Check size={11} color="white" strokeWidth={3} />
+          </button>
+          <span style={{
+            flex: 1, fontSize: '0.875rem',
+            color: 'var(--text-muted)',
+            textDecoration: 'line-through',
+          }}>
+            {t.text}
+          </span>
+          {!isGuest && (
+            <button
+              onClick={() => deleteTodo(t.id)}
+              style={{
+                width: 24, height: 24,
+                borderRadius: 'var(--r1)', border: 'none',
+                background: 'transparent', color: 'var(--fog)',
+                cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                opacity: 0.4,
+                transition: 'opacity var(--t-fast)',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.color = 'var(--danger)' }}
+              onMouseLeave={e => { e.currentTarget.style.opacity = '0.4'; e.currentTarget.style.color = 'var(--fog)' }}
+            >
+              <X size={13} />
+            </button>
+          )}
+        </div>
+      ))}
     </div>
   )
 }

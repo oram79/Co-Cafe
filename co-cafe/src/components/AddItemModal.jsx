@@ -18,6 +18,7 @@ const BLANK = {
   lowStockAt: 2,
   price: 0,
   notes: '',
+  expiryDate: '',
   trackedInSales: false,
 }
 
@@ -99,6 +100,21 @@ export default function AddItemModal({ onClose }) {
               onChange={e => set('notes', e.target.value)}
               placeholder="Supplier, reorder notes…"
               style={{ resize: 'vertical' }}
+            />
+          </div>
+
+          <div>
+            <label className="label">
+              Expiry Date
+              <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: 'var(--text-muted)', marginLeft: 6 }}>
+                — optional
+              </span>
+            </label>
+            <input
+              className="input-field"
+              type="date"
+              value={form.expiryDate}
+              onChange={e => set('expiryDate', e.target.value)}
             />
           </div>
 

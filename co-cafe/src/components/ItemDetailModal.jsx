@@ -2,6 +2,18 @@ import { useState } from 'react'
 import { X, Trash2 } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 
+function expiryStatus(dateStr) {
+  if (!dateStr) return null
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const exp   = new Date(dateStr); exp.setHours(0, 0, 0, 0)
+  const days  = Math.round((exp - today) / 86400000)
+  if (days < 0)  return { label: 'Expired',       color: 'var(--danger)',  bg: 'rgba(184,64,64,0.1)' }
+  if (days === 0) return { label: 'Expires today', color: 'var(--danger)',  bg: 'rgba(184,64,64,0.1)' }
+  if (days <= 3)  return { label: `${days} day${days > 1 ? 's' : ''} left`, color: 'var(--danger)',  bg: 'rgba(184,64,64,0.08)' }
+  if (days <= 7)  return { label: `${days} days`,  color: 'var(--accent)',  bg: 'rgba(196,129,58,0.1)' }
+  return { label: `${days} days`, color: 'var(--success)', bg: 'rgba(74,124,89,0.08)' }
+}
+
 const CATEGORIES = [
   'Baked Goods',
   'Pantry Items',
@@ -96,6 +108,54 @@ export default function ItemDetailModal({ item, onClose }) {
               placeholder="Supplier info, reorder notes…"
               style={{ resize: 'vertical' }}
             />
+          </div>
+
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--s2)' }}>
+              <label className="label" style={{ margin: 0 }}>
+                Expiry Date
+                <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: 'var(--text-muted)', marginLeft: 6 }}>
+                  — optional
+                </span>
+              </label>
+              {expiryStatus(form.expiryDate) && (() => {
+                const s = expiryStatus(form.expiryDate)
+                return (
+                  <span style={{
+                    fontSize: '0.7rem', fontWeight: 700,
+                    padding: '2px 8px', borderRadius: 'var(--r-pill)',
+                    background: s.bg, color: s.color,
+                  }}>
+                    {s.label}
+                  </span>
+                )
+              })()}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--s2)' }}>
+              <input
+                className="input-field"
+                type="date"
+                value={form.expiryDate || ''}
+                onChange={e => set('expiryDate', e.target.value)}
+                style={{ flex: 1 }}
+              />
+              {form.expiryDate && (
+                <button
+                  onClick={() => set('expiryDate', '')}
+                  title="Clear expiry date"
+                  style={{
+                    padding: '8px 10px', borderRadius: 'var(--r2)',
+                    border: '1px solid var(--border)', background: 'transparent',
+                    color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.75rem',
+                    transition: 'all var(--t-fast)', whiteSpace: 'nowrap',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.color = 'var(--danger)'; e.currentTarget.style.borderColor = 'rgba(184,64,64,0.4)' }}
+                  onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.borderColor = 'var(--border)' }}
+                >
+                  Clear
+                </button>
+              )}
+            </div>
           </div>
 
           <label className="checkbox-row">

@@ -11,8 +11,9 @@ export function AppProvider({ children, role = 'admin' }) {
   const [menu,        setMenu]        = useLocalStorage(isGuest ? 'cc_guest_menu'        : 'cc_menu', [])
   const [shifts,      setShifts]      = useLocalStorage(isGuest ? 'cc_guest_shifts'      : 'cc_shifts', [])
   const [checklists,  setChecklists]  = useLocalStorage(isGuest ? 'cc_guest_checklists'  : 'co-cafe-checklists', { open: [], close: [] })
-  const [orderList,        setOrderList]        = useLocalStorage(isGuest ? 'cc_guest_orderlist' : 'cc_orderlist', [])
+  const [orders,           setOrders]           = useLocalStorage(isGuest ? 'cc_guest_orders'    : 'cc_orders', [])
   const [recipes,          setRecipes]          = useLocalStorage(isGuest ? 'cc_guest_recipes'   : 'cc_recipes', [])
+  const [todos,            setTodos]            = useLocalStorage(isGuest ? 'cc_guest_todos'     : 'cc_todos', [])
   const [cleaningSchedule, setCleaningSchedule] = useLocalStorage(isGuest ? 'cc_guest_cleaning'  : 'cc_cleaning', {
     Mon: [{ id: 'mon-1', text: 'Task 1', done: false }, { id: 'mon-2', text: 'Task 2', done: false }],
     Tue: [{ id: 'tue-1', text: 'Task 1', done: false }, { id: 'tue-2', text: 'Task 2', done: false }],
@@ -108,9 +109,10 @@ export function AppProvider({ children, role = 'admin' }) {
       menu,
       shifts,
       checklists,
-      orderList,
+      orders,
       cleaningSchedule,
       recipes,
+      todos,
     }
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
     const url  = URL.createObjectURL(blob)
@@ -130,9 +132,10 @@ export function AppProvider({ children, role = 'admin' }) {
         if (Array.isArray(data.menu))      setMenu(data.menu)
         if (Array.isArray(data.shifts))    setShifts(data.shifts)
         if (data.checklists && typeof data.checklists === 'object') setChecklists(data.checklists)
-        if (Array.isArray(data.orderList)) setOrderList(data.orderList)
+        if (Array.isArray(data.orders))    setOrders(data.orders)
         if (data.cleaningSchedule && typeof data.cleaningSchedule === 'object') setCleaningSchedule(data.cleaningSchedule)
         if (Array.isArray(data.recipes)) setRecipes(data.recipes)
+        if (Array.isArray(data.todos))   setTodos(data.todos)
       } catch {
         alert('Could not read the file — make sure it is a valid Co. Cafe backup.')
       }
@@ -155,9 +158,10 @@ export function AppProvider({ children, role = 'admin' }) {
     isGuest,
     inventory, menu, shifts, activeShift, isOpen,
     checklists, setChecklists,
-    orderList, setOrderList,
+    orders, setOrders,
     cleaningSchedule, setCleaningSchedule,
     recipes, setRecipes,
+    todos, setTodos,
     addInventoryItem, updateInventoryItem, deleteInventoryItem, adjustQuantity,
     addMenuItem, updateMenuItem, deleteMenuItem,
     recordSale, deleteSale, deleteShift,

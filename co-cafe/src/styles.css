@@ -62,6 +62,39 @@
   --t-slow: 380ms ease;
 }
 
+/* --- DARK MODE --- */
+[data-theme="dark"] {
+  /*
+   * Override the raw palette vars that components use directly.
+   * --espresso and --cream are intentionally left as-is:
+   *   --espresso (#1A0F0A) is used as the nav bg — stays dark ✓
+   *   --cream (#F5EFE6) is used as text on espresso bg — stays light ✓
+   */
+  --latte:    #3D2415;   /* was cream/tan hover surface → dark warm brown */
+  --milk:     #341E12;   /* was near-white card bg → dark card bg */
+  --fog:      #9A7858;   /* was warm gray muted → lighter so it's readable on dark */
+  --mahogany: #C49468;   /* was mid-brown text → lightened for dark bg contrast */
+  --caramel:  #D4924A;   /* slightly brighter accent for dark bg */
+
+  /* Semantic tokens */
+  --bg:            #2A1810;
+  --surface:       #341E12;
+  --surface-2:     #3D2415;
+  --border:        rgba(255, 190, 130, 0.13);
+  --border-strong: rgba(255, 190, 130, 0.28);
+  --text-primary:   #F0E8DA;
+  --text-secondary: #C49468;
+  --text-muted:     #9A7858;
+  --accent:         #D4924A;
+  --accent-dark:    #B87830;
+  --danger:         #C85050;
+  --success:        #5A9468;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3),  0 1px 2px rgba(0,0,0,0.2);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.35), 0 2px 6px rgba(0,0,0,0.25);
+  --shadow-lg: 0 12px 32px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.28);
+  --shadow-xl: 0 24px 64px rgba(0,0,0,0.5);
+}
+
 /* --- RESET --- */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { font-size: 16px; -webkit-font-smoothing: antialiased; }

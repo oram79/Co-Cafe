@@ -1,6 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Package, BarChart2, BookOpen, LogOut } from 'lucide-react'
+import { Package, BarChart2, BookOpen, LogOut, Sun, Moon } from 'lucide-react'
 import { useApp } from '../context/AppContext'
+import { useTheme } from '../hooks/useTheme'
 
 function logout() {
   try {
@@ -20,6 +21,7 @@ export default function NavBar() {
   const navigate       = useNavigate()
   const { pathname }   = useLocation()
   const { isGuest }    = useApp()
+  const [dark, toggleTheme] = useTheme()
 
   return (
     <nav className="nav-bar" style={{
@@ -121,6 +123,37 @@ export default function NavBar() {
             </button>
           )
         })}
+
+        {/* Theme toggle */}
+        <button
+          onClick={toggleTheme}
+          title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+          style={{
+            display:      'flex',
+            alignItems:   'center',
+            justifyContent: 'center',
+            width:        32,
+            height:       32,
+            background:   'transparent',
+            border:       '1px solid rgba(255,255,255,0.12)',
+            borderRadius: 'var(--r2)',
+            cursor:       'pointer',
+            color:        'var(--fog)',
+            transition:   'all 0.15s ease',
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background  = 'rgba(255,255,255,0.08)'
+            e.currentTarget.style.color       = 'var(--caramel)'
+            e.currentTarget.style.borderColor = 'rgba(196,129,58,0.35)'
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background  = 'transparent'
+            e.currentTarget.style.color       = 'var(--fog)'
+            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'
+          }}
+        >
+          {dark ? <Sun size={14} /> : <Moon size={14} />}
+        </button>
 
         {/* Logout */}
         <button
