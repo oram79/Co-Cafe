@@ -439,7 +439,7 @@ function OrderListCard() {
 
   function clearCompanyOrder(id) {
     setOrders(prev => prev.map(c =>
-      c.id === id ? { ...c, items: [], file: null, fileName: null, fileType: null } : c
+      c.id === id ? { ...c, items: [] } : c
     ))
   }
 
