@@ -174,4 +174,6 @@ export const GUEST_DATA = {
     { id: "recipe-1780534732711", name: "Vanilla Syrup", category: "Syrup", notes: "250g sugar\n250ml water\n2 tsp vanilla extract" },
     { id: "recipe-1780535368905", name: "Cold Brew", category: "Coffee", notes: "100g coarse ground coffee\n1L cold water\nSteep 16h, strain" },
   ],
+  orders: [],
+  todos: [],
 }

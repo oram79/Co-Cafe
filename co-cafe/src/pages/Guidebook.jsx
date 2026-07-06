@@ -437,9 +437,10 @@ function OrderListCard() {
     setOrders(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c))
   }
 
-  function removeCompany(id) {
-    setOrders(prev => prev.filter(c => c.id !== id))
-    setOpenId(null)
+  function clearCompanyOrder(id) {
+    setOrders(prev => prev.map(c =>
+      c.id === id ? { ...c, items: [], file: null, fileName: null, fileType: null } : c
+    ))
   }
 
   return (
@@ -545,11 +546,8 @@ function OrderListCard() {
               )}
             </div>
           ) : orders.map((company, idx) => {
-            const total   = company.items.length
-            const checked = company.items.filter(i => i.checked).length
-            const pending = total - checked
-            const av      = avatarColor(idx)
-            const pct     = total > 0 ? (checked / total) * 100 : 0
+            const total = company.items.length
+            const av    = avatarColor(idx)
 
             return (
               <button
@@ -576,54 +574,18 @@ function OrderListCard() {
                   {companyInitials(company.name)}
                 </div>
 
-                {/* Name + progress */}
+                {/* Name + item count */}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ fontWeight: 600, fontSize: '0.875rem', margin: 0 }} className="truncate">
                     {company.name}
                   </p>
-                  {total > 0 ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--s2)', marginTop: 4 }}>
-                      <div style={{
-                        flex: 1, height: 3, background: 'var(--border)',
-                        borderRadius: 99, overflow: 'hidden',
-                      }}>
-                        <div style={{
-                          width: `${pct}%`, height: '100%',
-                          background: pct === 100 ? 'var(--success)' : 'var(--mahogany)',
-                          borderRadius: 99, transition: 'width 0.3s ease',
-                        }} />
-                      </div>
-                      <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', flexShrink: 0 }}>
-                        {checked}/{total}
-                      </span>
-                    </div>
-                  ) : (
-                    <p style={{ fontSize: '0.72rem', color: 'var(--fog)', margin: '2px 0 0' }}>
-                      No items
-                    </p>
-                  )}
+                  <p style={{ fontSize: '0.72rem', color: 'var(--fog)', margin: '2px 0 0' }}>
+                    {total === 0 ? 'No items' : `${total} item${total !== 1 ? 's' : ''}`}
+                  </p>
                 </div>
 
-                {/* Badges */}
+                {/* Icons */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--s2)', flexShrink: 0 }}>
-                  {pending > 0 && (
-                    <span style={{
-                      fontSize: '0.68rem', fontWeight: 700,
-                      background: 'rgba(107,58,36,0.1)', color: 'var(--mahogany)',
-                      padding: '2px 8px', borderRadius: 'var(--r-pill)',
-                    }}>
-                      {pending} left
-                    </span>
-                  )}
-                  {pending === 0 && total > 0 && (
-                    <span style={{
-                      fontSize: '0.68rem', fontWeight: 700,
-                      background: 'rgba(74,124,89,0.1)', color: 'var(--success)',
-                      padding: '2px 8px', borderRadius: 'var(--r-pill)',
-                    }}>
-                      Done
-                    </span>
-                  )}
                   {company.file && (
                     <FileText size={13} color="var(--text-muted)" title="Order form attached" />
                   )}
@@ -641,44 +603,33 @@ function OrderListCard() {
           isGuest={isGuest}
           onClose={() => setOpenId(null)}
           onUpdate={updates => updateCompany(selectedCompany.id, updates)}
-          onDelete={() => removeCompany(selectedCompany.id)}
+          onClear={() => clearCompanyOrder(selectedCompany.id)}
         />
       )}
     </>
   )
 }
 
-function CompanyOrderModal({ company, isGuest, onClose, onUpdate, onDelete }) {
+function CompanyOrderModal({ company, isGuest, onClose, onUpdate, onClear }) {
   const [activeTab,     setActiveTab]     = useState('items')
   const [draft,         setDraft]         = useState('')
   const [confirmDelete, setConfirmDelete] = useState(false)
   const inputRef = useRef(null)
   const fileRef  = useRef(null)
 
-  const items        = company.items
-  const total        = items.length
-  const checkedCount = items.filter(i => i.checked).length
-  const pendingCount = total - checkedCount
-  const pct          = total > 0 ? (checkedCount / total) * 100 : 0
+  const items = company.items
+  const total = items.length
 
   function addItem() {
     const text = draft.trim()
     if (!text) return
-    onUpdate({ items: [...items, { id: crypto.randomUUID(), text, checked: false }] })
+    onUpdate({ items: [...items, { id: crypto.randomUUID(), text }] })
     setDraft('')
     inputRef.current?.focus()
   }
 
-  function toggleItem(id) {
-    onUpdate({ items: items.map(i => i.id === id ? { ...i, checked: !i.checked } : i) })
-  }
-
   function removeItem(id) {
     onUpdate({ items: items.filter(i => i.id !== id) })
-  }
-
-  function resetItems() {
-    onUpdate({ items: items.map(i => ({ ...i, checked: false })) })
   }
 
   function handleFile(file) {
@@ -738,17 +689,12 @@ function CompanyOrderModal({ company, isGuest, onClose, onUpdate, onDelete }) {
               {company.name}
             </p>
             <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: 0 }}>
-              {total === 0
-                ? 'No items yet'
-                : pct === 100
-                  ? 'All items ordered'
-                  : `${pendingCount} of ${total} item${total !== 1 ? 's' : ''} remaining`
-              }
+              {total === 0 ? 'No items yet' : `${total} item${total !== 1 ? 's' : ''}`}
             </p>
           </div>
           <div style={{ display: 'flex', gap: 'var(--s1)' }}>
             {!isGuest && (
-              <IconBtn onClick={() => setConfirmDelete(true)} title="Remove supplier">
+              <IconBtn onClick={() => setConfirmDelete(true)} title="Clear order list">
                 <Trash2 size={14} />
               </IconBtn>
             )}
@@ -756,24 +702,13 @@ function CompanyOrderModal({ company, isGuest, onClose, onUpdate, onDelete }) {
           </div>
         </div>
 
-        {/* Progress bar */}
-        {total > 0 && (
-          <div style={{ height: 3, background: 'var(--border)', flexShrink: 0 }}>
-            <div style={{
-              width: `${pct}%`, height: '100%',
-              background: pct === 100 ? 'var(--success)' : 'var(--mahogany)',
-              transition: 'width 0.35s ease',
-            }} />
-          </div>
-        )}
-
         {/* Tabs */}
         <div style={{
           display: 'flex', borderBottom: '1px solid var(--border)',
           padding: '0 var(--s3)', flexShrink: 0,
         }}>
           <button style={TAB_STYLE(activeTab === 'items')} onClick={() => setActiveTab('items')}>
-            Order Items {total > 0 && `(${checkedCount}/${total})`}
+            Order Items
           </button>
           <button style={TAB_STYLE(activeTab === 'form')} onClick={() => setActiveTab('form')}>
             Order Form {company.file ? '· Attached' : ''}
@@ -824,26 +759,6 @@ function CompanyOrderModal({ company, isGuest, onClose, onUpdate, onDelete }) {
                 </div>
               )}
 
-              {/* Reset link */}
-              {!isGuest && items.some(i => i.checked) && (
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 'var(--s2)' }}>
-                  <button
-                    onClick={resetItems}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 5,
-                      padding: '3px 10px', borderRadius: 'var(--r2)',
-                      border: '1px solid var(--border)', background: 'transparent',
-                      color: 'var(--text-muted)', fontSize: '0.72rem', cursor: 'pointer',
-                      transition: 'all var(--t-fast)',
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.borderColor = 'var(--border-strong)' }}
-                    onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.borderColor = 'var(--border)' }}
-                  >
-                    <RotateCcw size={10} /> Reset all
-                  </button>
-                </div>
-              )}
-
               {items.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: 'var(--s6) 0', color: 'var(--text-muted)' }}>
                   <p style={{ fontSize: '0.875rem', margin: 0 }}>
@@ -861,28 +776,9 @@ function CompanyOrderModal({ company, isGuest, onClose, onUpdate, onDelete }) {
                         display: 'flex', alignItems: 'center', gap: 'var(--s3)',
                         padding: 'var(--s3) var(--s4)',
                         borderTop: idx > 0 ? '1px solid var(--border)' : 'none',
-                        background: item.checked ? 'rgba(74,124,89,0.04)' : 'transparent',
-                        transition: 'background var(--t-fast)',
                       }}
                     >
-                      <button
-                        onClick={() => toggleItem(item.id)}
-                        style={{
-                          width: 22, height: 22, flexShrink: 0, borderRadius: 7,
-                          border: item.checked ? 'none' : '2px solid var(--fog)',
-                          background: item.checked ? 'var(--success)' : 'transparent',
-                          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          transition: 'all var(--t-fast)',
-                        }}
-                      >
-                        {item.checked && <Check size={12} color="white" strokeWidth={3} />}
-                      </button>
-                      <span style={{
-                        flex: 1, fontSize: '0.875rem',
-                        color: item.checked ? 'var(--text-muted)' : 'var(--text-primary)',
-                        textDecoration: item.checked ? 'line-through' : 'none',
-                        transition: 'all var(--t-fast)',
-                      }}>
+                      <span style={{ flex: 1, fontSize: '0.875rem', color: 'var(--text-primary)' }}>
                         {item.text}
                       </span>
                       {!isGuest && (
@@ -1031,7 +927,7 @@ function CompanyOrderModal({ company, isGuest, onClose, onUpdate, onDelete }) {
             background: 'rgba(184,64,64,0.04)', flexShrink: 0,
           }}>
             <span style={{ fontSize: '0.83rem', color: 'var(--danger)', fontWeight: 500 }}>
-              Remove "{company.name}" permanently?
+              Clear all order items for "{company.name}"?
             </span>
             <div style={{ display: 'flex', gap: 'var(--s2)' }}>
               <button
@@ -1045,14 +941,14 @@ function CompanyOrderModal({ company, isGuest, onClose, onUpdate, onDelete }) {
                 Cancel
               </button>
               <button
-                onClick={onDelete}
+                onClick={() => { onClear(); setConfirmDelete(false) }}
                 style={{
                   padding: '5px 14px', borderRadius: 'var(--r2)',
                   border: 'none', background: 'var(--danger)', color: 'white',
                   fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer',
                 }}
               >
-                Remove
+                Clear Order
               </button>
             </div>
           </div>
