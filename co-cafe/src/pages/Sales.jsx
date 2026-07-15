@@ -15,6 +15,7 @@ import SaleEntryModal from '../components/SaleEntryModal'
 import AddMenuItemModal from '../components/AddMenuItemModal'
 
 const PIE_COLORS = ['#C4813A', '#3D1F10', '#6B3A24', '#4A7C59', '#5A6A8A', '#8A5A5A', '#B8A040', '#40788A']
+const HISTORY_PAGE_SIZE = 5
 
 const TT = {
   background: '#1A0F0A', border: 'none', borderRadius: 8,
@@ -248,7 +249,7 @@ function TopItemsCard({ items, title }) {
                 <span style={{
                   width: 22, height: 22, borderRadius: 6, flexShrink: 0,
                   background: `${PIE_COLORS[i % PIE_COLORS.length]}22`,
-                  color: PIE_COLORS[i % PIE_COLORS.length],
+                  color: 'var(--text-primary)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: '0.65rem', fontWeight: 800,
                 }}>
@@ -681,11 +682,14 @@ export default function Sales() {
   const [expandedShifts, setExpandedShifts] = useState({})
   const [showTxLog,      setShowTxLog]      = useState(true)
   const [period,         setPeriod]         = useState('today')
+  const [historyLimit,   setHistoryLimit]   = useState(HISTORY_PAGE_SIZE)
 
   const todayStr   = new Date().toDateString()
   const todayLabel = new Date().toLocaleDateString('en-CA', { weekday: 'long', month: 'long', day: 'numeric' })
 
   const pastShifts    = useMemo(() => [...shifts].filter(s => new Date(s.startedAt).toDateString() !== todayStr).reverse(), [shifts, todayStr])
+  const visibleShifts = useMemo(() => pastShifts.slice(0, historyLimit), [pastShifts, historyLimit])
+  const remainingDays = pastShifts.length - visibleShifts.length
   const activeStats   = useMemo(() => activeShift ? calcStats(activeShift.sales) : null, [activeShift])
   const bestItem      = useMemo(() => activeShift ? topItem(activeShift.sales) : null, [activeShift])
   const hasSalesToday = activeShift && activeShift.sales.length > 0
@@ -776,7 +780,7 @@ export default function Sales() {
                       textAlign: 'left', transition: 'background var(--t-fast)',
                       borderBottom: showTxLog ? '1px solid var(--border)' : 'none',
                     }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#dfd0bc'}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--latte-deep)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'var(--latte)'}
                   >
                     {showTxLog ? <ChevronDown size={14} color="var(--text-muted)" /> : <ChevronRight size={14} color="var(--text-muted)" />}
@@ -815,7 +819,7 @@ export default function Sales() {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--s2)' }}>
-                  {pastShifts.map(shift => {
+                  {visibleShifts.map(shift => {
                     const stats    = calcStats(shift.sales)
                     const expanded = expandedShifts[shift.id]
                     const cats     = catPieData(shift.sales)
@@ -913,6 +917,16 @@ export default function Sales() {
                     )
                   })}
                 </div>
+
+                {remainingDays > 0 && (
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    style={{ width: '100%', marginTop: 'var(--s3)' }}
+                    onClick={() => setHistoryLimit(l => l + HISTORY_PAGE_SIZE)}
+                  >
+                    Show {Math.min(remainingDays, HISTORY_PAGE_SIZE)} more day{Math.min(remainingDays, HISTORY_PAGE_SIZE) !== 1 ? 's' : ''} ({remainingDays} remaining)
+                  </button>
+                )}
               </div>
             )}
           </>

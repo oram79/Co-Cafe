@@ -6,7 +6,7 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from 
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 
-const PREVIEW_LIMIT = 4
+const PREVIEW_LIMIT = 6
 
 export default function Guidebook() {
   const { checklists: lists, setChecklists: setLists, isGuest } = useApp()
@@ -136,7 +136,7 @@ export default function Guidebook() {
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
       <NavBar />
 
-      <div className="page" style={{ maxWidth: 860 }}>
+      <div className="page">
 
         <div style={{ marginBottom: 'var(--s6)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--s3)', marginBottom: 'var(--s2)' }}>
@@ -155,6 +155,9 @@ export default function Guidebook() {
             border: '1px solid var(--border)',
             boxShadow: 'var(--shadow-sm)',
             overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100%',
           }}>
             <div style={{
               padding: 'var(--s4) var(--s5)',
@@ -162,6 +165,7 @@ export default function Guidebook() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
+              flexShrink: 0,
             }}>
               <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Open & Close Checklists</span>
               <IconBtn onClick={() => setExpanded(true)} title="Open full view">
@@ -173,7 +177,7 @@ export default function Guidebook() {
             {progressBar}
 
             {/* Preview: first PREVIEW_LIMIT tasks */}
-            <div>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
               {currentList.length === 0 && (
                 <div style={{
                   padding: 'var(--s5)',
@@ -223,26 +227,27 @@ export default function Guidebook() {
                   </span>
                 </div>
               ))}
-
-              {hiddenCount > 0 && (
-                <button
-                  onClick={() => setExpanded(true)}
-                  style={{
-                    width: '100%',
-                    padding: 'var(--s3) var(--s5)',
-                    background: 'transparent',
-                    border: 'none',
-                    borderTop: '1px solid var(--border)',
-                    cursor: 'pointer',
-                    fontSize: '0.8rem',
-                    color: 'var(--mahogany)',
-                    textAlign: 'center',
-                  }}
-                >
-                  +{hiddenCount} more — open to see all
-                </button>
-              )}
             </div>
+
+            {hiddenCount > 0 && (
+              <button
+                onClick={() => setExpanded(true)}
+                style={{
+                  width: '100%',
+                  flexShrink: 0,
+                  padding: 'var(--s3) var(--s5)',
+                  background: 'transparent',
+                  border: 'none',
+                  borderTop: '1px solid var(--border)',
+                  cursor: 'pointer',
+                  fontSize: '0.8rem',
+                  color: 'var(--mahogany)',
+                  textAlign: 'center',
+                }}
+              >
+                +{hiddenCount} more — open to see all
+              </button>
+            )}
           </div>
 
           {/* — Order list card — */}
@@ -410,11 +415,11 @@ function companyInitials(name) {
 }
 
 const AVATAR_COLORS = [
-  { bg: 'rgba(107,58,36,0.14)', color: 'var(--mahogany)' },
-  { bg: 'rgba(74,124,89,0.13)', color: 'var(--success)' },
-  { bg: 'rgba(196,129,58,0.15)', color: '#9a6020' },
-  { bg: 'rgba(80,80,160,0.1)',   color: '#4848a0' },
-  { bg: 'rgba(160,60,60,0.12)',  color: '#903030' },
+  { bg: 'var(--avatar-0-bg)', color: 'var(--avatar-0-fg)' },
+  { bg: 'var(--avatar-1-bg)', color: 'var(--avatar-1-fg)' },
+  { bg: 'var(--avatar-2-bg)', color: 'var(--avatar-2-fg)' },
+  { bg: 'var(--avatar-3-bg)', color: 'var(--avatar-3-fg)' },
+  { bg: 'var(--avatar-4-bg)', color: 'var(--avatar-4-fg)' },
 ]
 
 function avatarColor(idx) { return AVATAR_COLORS[idx % AVATAR_COLORS.length] }
@@ -1199,8 +1204,8 @@ function RecipeBookCard() {
   const { recipes, setRecipes, isGuest } = useApp()
   const [expanded, setExpanded] = useState(false)
 
-  const preview = recipes.slice(0, 4)
-  const hiddenCount = Math.max(0, recipes.length - 4)
+  const preview = recipes.slice(0, 6)
+  const hiddenCount = Math.max(0, recipes.length - 6)
 
   return (
     <>
@@ -1212,6 +1217,7 @@ function RecipeBookCard() {
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
+        height: '100%',
       }}>
         <div style={{
           padding: 'var(--s4) var(--s5)',
@@ -1219,6 +1225,7 @@ function RecipeBookCard() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          flexShrink: 0,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--s2)' }}>
             <ChefHat size={16} color="var(--mahogany)" />
@@ -1238,7 +1245,7 @@ function RecipeBookCard() {
           </IconBtn>
         </div>
 
-        <div>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
           {recipes.length === 0 ? (
             <div style={{ padding: 'var(--s5)', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
               No recipes yet open to add some.
@@ -1271,25 +1278,26 @@ function RecipeBookCard() {
               </div>
             ))
           )}
-          {hiddenCount > 0 && (
-            <button
-              onClick={() => setExpanded(true)}
-              style={{
-                width: '100%',
-                padding: 'var(--s3) var(--s5)',
-                background: 'transparent',
-                border: 'none',
-                borderTop: '1px solid var(--border)',
-                cursor: 'pointer',
-                fontSize: '0.8rem',
-                color: 'var(--mahogany)',
-                textAlign: 'center',
-              }}
-            >
-              +{hiddenCount} more
-            </button>
-          )}
         </div>
+        {hiddenCount > 0 && (
+          <button
+            onClick={() => setExpanded(true)}
+            style={{
+              width: '100%',
+              flexShrink: 0,
+              padding: 'var(--s3) var(--s5)',
+              background: 'transparent',
+              border: 'none',
+              borderTop: '1px solid var(--border)',
+              cursor: 'pointer',
+              fontSize: '0.8rem',
+              color: 'var(--mahogany)',
+              textAlign: 'center',
+            }}
+          >
+            +{hiddenCount} more
+          </button>
+        )}
       </div>
 
       {expanded && (
@@ -2087,7 +2095,7 @@ function TodoCard() {
       {/* Empty state */}
       {todos.length === 0 && (
         <div style={{ padding: 'var(--s6) var(--s5)', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-          No tasks yet — add something above.
+          No tasks yet add something above.
         </div>
       )}
 

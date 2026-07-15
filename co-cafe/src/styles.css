@@ -12,6 +12,7 @@
   --caramel:     #C4813A;   /* warm amber accent */
   --cream:       #F5EFE6;   /* off-white page bg */
   --latte:       #E8D9C5;   /* warm light surface */
+  --latte-deep:  #dfd0bc;   /* stronger hover state above latte */
   --milk:        #FAF7F2;   /* near-white card bg */
   --fog:         #B8A99A;   /* muted text / borders */
 
@@ -28,6 +29,13 @@
   --accent-dark: #A36A28;
   --danger:      #B84040;
   --success:     #4A7C59;
+
+  /* Avatar monogram palette (e.g. supplier initials) — pairs of tinted bg + readable fg */
+  --avatar-0-bg: rgba(107,58,36,0.14); --avatar-0-fg: var(--mahogany);
+  --avatar-1-bg: rgba(74,124,89,0.13); --avatar-1-fg: var(--success);
+  --avatar-2-bg: rgba(196,129,58,0.15); --avatar-2-fg: #9a6020;
+  --avatar-3-bg: rgba(80,80,160,0.1);   --avatar-3-fg: #4848a0;
+  --avatar-4-bg: rgba(160,60,60,0.12);  --avatar-4-fg: #903030;
 
   /* Typography */
   --font-display: 'Playfair Display', Georgia, serif;
@@ -70,29 +78,38 @@
    *   --espresso (#1A0F0A) is used as the nav bg — stays dark ✓
    *   --cream (#F5EFE6) is used as text on espresso bg — stays light ✓
    */
-  --latte:    #3D2415;   /* was cream/tan hover surface → dark warm brown */
-  --milk:     #341E12;   /* was near-white card bg → dark card bg */
-  --fog:      #9A7858;   /* was warm gray muted → lighter so it's readable on dark */
-  --mahogany: #C49468;   /* was mid-brown text → lightened for dark bg contrast */
-  --caramel:  #D4924A;   /* slightly brighter accent for dark bg */
+  --latte:      #4A2F1C;   /* was cream/tan hover surface → dark warm brown, lightened for card separation */
+  --latte-deep: #5A3D24;   /* hover state above latte — lighter, not darker, in dark mode */
+  --milk:       #3A2416;   /* was near-white card bg → dark card bg, lightened off --bg for contrast */
+  --fog:        #BA9270;   /* was warm gray muted → lightened further to clear 4.5:1 on --surface */
+  --mahogany:   #D9A876;   /* was mid-brown text → lightened for dark bg contrast */
+  --caramel:    #E0A050;   /* slightly brighter accent for dark bg */
 
   /* Semantic tokens */
-  --bg:            #2A1810;
-  --surface:       #341E12;
-  --surface-2:     #3D2415;
-  --border:        rgba(255, 190, 130, 0.13);
-  --border-strong: rgba(255, 190, 130, 0.28);
-  --text-primary:   #F0E8DA;
-  --text-secondary: #C49468;
-  --text-muted:     #9A7858;
-  --accent:         #D4924A;
-  --accent-dark:    #B87830;
-  --danger:         #C85050;
-  --success:        #5A9468;
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3),  0 1px 2px rgba(0,0,0,0.2);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.35), 0 2px 6px rgba(0,0,0,0.25);
-  --shadow-lg: 0 12px 32px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.28);
-  --shadow-xl: 0 24px 64px rgba(0,0,0,0.5);
+  --bg:            #1F130C;   /* darkened so cards/surfaces visibly separate from the page */
+  --surface:       #3A2416;
+  --surface-2:     #4A2F1C;
+  --border:        rgba(255, 205, 155, 0.30);   /* strengthened — was too faint to read as a divider */
+  --border-strong: rgba(255, 205, 155, 0.48);
+  --text-primary:   #F5EDE0;
+  --text-secondary: #D9A876;
+  --text-muted:     #BA9270;
+  --accent:         #E0A050;
+  --accent-dark:    #C48838;
+  --danger:         #D86868;
+  --success:        #6BAA78;
+
+  /* Avatar monogram palette — fg forced to white (never a dark hex) + bg saturated enough to read against it */
+  --avatar-0-bg: rgba(217,168,118,0.3); --avatar-0-fg: #FFFFFF;
+  --avatar-1-bg: rgba(107,170,120,0.3); --avatar-1-fg: #FFFFFF;
+  --avatar-2-bg: rgba(224,160,80,0.32); --avatar-2-fg: #FFFFFF;
+  --avatar-3-bg: rgba(110,110,200,0.32); --avatar-3-fg: #FFFFFF;
+  --avatar-4-bg: rgba(216,104,104,0.3); --avatar-4-fg: #FFFFFF;
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.25);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.4),  0 2px 6px rgba(0,0,0,0.3);
+  --shadow-lg: 0 12px 32px rgba(0,0,0,0.45), 0 4px 12px rgba(0,0,0,0.32);
+  --shadow-xl: 0 24px 64px rgba(0,0,0,0.55);
 }
 
 /* --- RESET --- */
