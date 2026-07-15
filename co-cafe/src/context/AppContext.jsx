@@ -14,6 +14,7 @@ export function AppProvider({ children, role = 'admin' }) {
   const [orders,           setOrders]           = useLocalStorage(isGuest ? 'cc_guest_orders'    : 'cc_orders', [])
   const [recipes,          setRecipes]          = useLocalStorage(isGuest ? 'cc_guest_recipes'   : 'cc_recipes', [])
   const [todos,            setTodos]            = useLocalStorage(isGuest ? 'cc_guest_todos'     : 'cc_todos', [])
+  const [tally,            setTally]            = useLocalStorage(isGuest ? 'cc_guest_tally'     : 'cc_tally', { date: '', coffee: 0, tea: 0 })
   const [cleaningSchedule, setCleaningSchedule] = useLocalStorage(isGuest ? 'cc_guest_cleaning'  : 'cc_cleaning', {
     Mon: [{ id: 'mon-1', text: 'Task 1', done: false }, { id: 'mon-2', text: 'Task 2', done: false }],
     Tue: [{ id: 'tue-1', text: 'Task 1', done: false }, { id: 'tue-2', text: 'Task 2', done: false }],
@@ -162,6 +163,7 @@ export function AppProvider({ children, role = 'admin' }) {
     cleaningSchedule, setCleaningSchedule,
     recipes, setRecipes,
     todos, setTodos,
+    tally, setTally,
     addInventoryItem, updateInventoryItem, deleteInventoryItem, adjustQuantity,
     addMenuItem, updateMenuItem, deleteMenuItem,
     recordSale, deleteSale, deleteShift,

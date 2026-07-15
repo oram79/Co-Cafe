@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { BookOpen, Sun, Moon, RotateCcw, Pencil, Plus, Trash2, Check, GripVertical, Wrench, ChefHat, ChevronLeft, ChevronRight, Maximize2, X, ClipboardList, ListChecks, FileText, Upload } from 'lucide-react'
+import { BookOpen, Sun, Moon, RotateCcw, Pencil, Plus, Trash2, Check, GripVertical, Wrench, ChefHat, ChevronLeft, ChevronRight, Maximize2, X, ClipboardList, ListChecks, FileText, Upload, Coffee, Leaf } from 'lucide-react'
 import NavBar from '../components/NavBar'
 import { useApp } from '../context/AppContext'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
@@ -250,6 +250,11 @@ export default function Guidebook() {
           <CleaningCard />
           <RecipeBookCard />
 
+        </div>
+
+        {/* — Resident Tally — full width */}
+        <div style={{ marginTop: 'var(--s4)' }}>
+          <TallyCard />
         </div>
 
         {/* — Quick To-Do — full width below grid */}
@@ -1769,6 +1774,177 @@ function SortableTask({ item, isLast, editing, onToggle, onRemove, onEdit }) {
         >
           <Trash2 size={14} />
         </button>
+      )}
+    </div>
+  )
+}
+
+function TallyGroup({ n }) {
+  return (
+    <svg width={34} height={40} style={{ flexShrink: 0, color: 'var(--mahogany)' }}>
+      {n >= 1 && <line x1={5}  y1={2} x2={5}  y2={38} stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" />}
+      {n >= 2 && <line x1={12} y1={2} x2={12} y2={38} stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" />}
+      {n >= 3 && <line x1={19} y1={2} x2={19} y2={38} stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" />}
+      {n >= 4 && <line x1={26} y1={2} x2={26} y2={38} stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" />}
+      {n >= 5 && <line x1={0}  y1={38} x2={34} y2={2} stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" />}
+    </svg>
+  )
+}
+
+function TallyMarks({ count }) {
+  const groups = Math.floor(count / 5)
+  const rem    = count % 5
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', minHeight: 40 }}>
+      {Array.from({ length: groups }, (_, i) => <TallyGroup key={i} n={5} />)}
+      {rem > 0 && <TallyGroup n={rem} />}
+      {count === 0 && (
+        <span style={{ color: 'var(--fog)', fontSize: '0.8rem', fontStyle: 'italic' }}>none yet</span>
+      )}
+    </div>
+  )
+}
+
+function TallyCard() {
+  const { tally, setTally, isGuest } = useApp()
+  const today  = new Date().toDateString()
+  const isToday = tally.date === today
+  const coffee  = isToday ? tally.coffee : 0
+  const tea     = isToday ? tally.tea    : 0
+
+  function adjust(type, delta) {
+    const base = isToday ? tally : { date: today, coffee: 0, tea: 0 }
+    setTally({ ...base, date: today, [type]: Math.max(0, base[type] + delta) })
+  }
+
+  function resetTally() {
+    setTally({ date: today, coffee: 0, tea: 0 })
+  }
+
+  const ROWS = [
+    { key: 'coffee', label: 'Coffee', Icon: Coffee, count: coffee },
+    { key: 'tea',    label: 'Tea',    Icon: Leaf,   count: tea    },
+  ]
+
+  return (
+    <div style={{
+      background: 'var(--surface)', borderRadius: 'var(--r3)',
+      border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)',
+      overflow: 'hidden',
+    }}>
+      {/* Header */}
+      <div style={{
+        padding: 'var(--s4) var(--s5)', borderBottom: '1px solid var(--border)',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--s2)' }}>
+          <Coffee size={16} color="var(--mahogany)" />
+          <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Resident Tally</span>
+          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginLeft: 'var(--s1)' }}>
+            complimentary drinks · resets each day
+          </span>
+        </div>
+        {!isGuest && (coffee > 0 || tea > 0) && (
+          <button
+            onClick={resetTally}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              padding: '4px 10px', borderRadius: 'var(--r2)',
+              border: '1px solid var(--border)', background: 'transparent',
+              color: 'var(--text-muted)', fontSize: '0.72rem', cursor: 'pointer',
+              transition: 'all var(--t-fast)',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = 'var(--danger)'; e.currentTarget.style.borderColor = 'rgba(184,64,64,0.4)' }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.borderColor = 'var(--border)' }}
+          >
+            <RotateCcw size={11} /> Reset
+          </button>
+        )}
+      </div>
+
+      {/* Tally columns */}
+      <div style={{ display: 'flex' }}>
+        {ROWS.map(({ key, label, Icon, count }, idx) => (
+          <div
+            key={key}
+            style={{
+              flex: 1,
+              padding: 'var(--s4) var(--s5)',
+              borderRight: idx === 0 ? '1px solid var(--border)' : 'none',
+            }}
+          >
+            {/* Label + big number */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--s3)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--s2)' }}>
+                <Icon size={14} color="var(--text-muted)" />
+                <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>{label}</span>
+              </div>
+              <span style={{
+                fontFamily: 'var(--font-display)', fontSize: '1.6rem', fontWeight: 700,
+                color: count > 0 ? 'var(--mahogany)' : 'var(--fog)', lineHeight: 1,
+              }}>
+                {count}
+              </span>
+            </div>
+
+            {/* Tally marks */}
+            <div style={{ marginBottom: 'var(--s4)', minHeight: 44 }}>
+              <TallyMarks count={count} />
+            </div>
+
+            {/* + / − buttons */}
+            {!isGuest && (
+              <div style={{ display: 'flex', gap: 'var(--s2)' }}>
+                <button
+                  onClick={() => adjust(key, -1)}
+                  disabled={count === 0}
+                  style={{
+                    flex: 1, padding: 'var(--s2) 0',
+                    borderRadius: 'var(--r2)', border: '1px solid var(--border)',
+                    background: 'transparent',
+                    color: count === 0 ? 'var(--fog)' : 'var(--text-secondary)',
+                    cursor: count === 0 ? 'not-allowed' : 'pointer',
+                    fontSize: '1.25rem', fontWeight: 300,
+                    transition: 'all var(--t-fast)',
+                    opacity: count === 0 ? 0.35 : 1,
+                  }}
+                  onMouseEnter={e => count > 0 && (e.currentTarget.style.background = 'var(--latte)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                >
+                  −
+                </button>
+                <button
+                  onClick={() => adjust(key, 1)}
+                  style={{
+                    flex: 2, padding: 'var(--s2) 0',
+                    borderRadius: 'var(--r2)', border: 'none',
+                    background: 'var(--mahogany)', color: 'white',
+                    cursor: 'pointer', fontSize: '1.25rem', fontWeight: 600,
+                    transition: 'opacity var(--t-fast)',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.opacity = '0.85')}
+                  onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+                >
+                  +
+                </button>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Total footer */}
+      {(coffee + tea) > 0 && (
+        <div style={{
+          padding: 'var(--s3) var(--s5)', borderTop: '1px solid var(--border)',
+          background: 'var(--latte)',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        }}>
+          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Total complimentary today</span>
+          <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--mahogany)' }}>
+            {coffee + tea}
+          </span>
+        </div>
       )}
     </div>
   )

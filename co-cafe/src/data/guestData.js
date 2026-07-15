@@ -176,4 +176,5 @@ export const GUEST_DATA = {
   ],
   orders: [],
   todos: [],
+  tally: { date: '', coffee: 0, tea: 0 },
 }
