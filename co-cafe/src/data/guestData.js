@@ -177,4 +177,23 @@ export const GUEST_DATA = {
   orders: [],
   todos: [],
   tally: { date: '', coffee: 0, tea: 0 },
+  fridgeLog: {
+    maxTemp: 40,
+    entries: [
+      { id: "fridge-1780540001", date: "2026-06-30", time: "08:05", temp: 37, initials: "JS", action: "" },
+      { id: "fridge-1780540002", date: "2026-06-30", time: "14:10", temp: 39, initials: "MK", action: "" },
+      { id: "fridge-1780540003", date: "2026-06-29", time: "08:00", temp: 43, initials: "JS", action: "Adjusted thermostat, rechecked at close" },
+    ],
+  },
+  freezerLog: {
+    maxTemp: 0,
+    entries: [
+      { id: "freezer-1780540101", date: "2026-06-30", time: "08:07", temp: -2, initials: "JS", action: "" },
+      { id: "freezer-1780540102", date: "2026-06-29", time: "08:02", temp: -1, initials: "MK", action: "" },
+    ],
+  },
+  wasteLog: [
+    { id: "waste-1780540201", date: "2026-06-30", category: "Food", item: "Blueberry Muffins", qty: 3, unit: "each", reason: "Unsold end of day", cost: 10.5, initials: "MK" },
+    { id: "waste-1780540202", date: "2026-06-29", category: "Drink", item: "Drip Coffee", qty: 1, unit: "L", reason: "Overbrewed", cost: 4.0, initials: "JS" },
+  ],
 }

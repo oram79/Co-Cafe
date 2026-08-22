@@ -15,6 +15,9 @@ export function AppProvider({ children, role = 'admin' }) {
   const [recipes,          setRecipes]          = useLocalStorage(isGuest ? 'cc_guest_recipes'   : 'cc_recipes', [])
   const [todos,            setTodos]            = useLocalStorage(isGuest ? 'cc_guest_todos'     : 'cc_todos', [])
   const [tally,            setTally]            = useLocalStorage(isGuest ? 'cc_guest_tally'     : 'cc_tally', { date: '', coffee: 0, tea: 0 })
+  const [fridgeLog,        setFridgeLog]        = useLocalStorage(isGuest ? 'cc_guest_fridgeLog'  : 'cc_fridgeLog',  { maxTemp: 40, entries: [] })
+  const [freezerLog,       setFreezerLog]       = useLocalStorage(isGuest ? 'cc_guest_freezerLog' : 'cc_freezerLog', { maxTemp: 0,  entries: [] })
+  const [wasteLog,         setWasteLog]         = useLocalStorage(isGuest ? 'cc_guest_wasteLog'   : 'cc_wasteLog', [])
   const [cleaningSchedule, setCleaningSchedule] = useLocalStorage(isGuest ? 'cc_guest_cleaning'  : 'cc_cleaning', {
     Mon: [{ id: 'mon-1', text: 'Task 1', done: false }, { id: 'mon-2', text: 'Task 2', done: false }],
     Tue: [{ id: 'tue-1', text: 'Task 1', done: false }, { id: 'tue-2', text: 'Task 2', done: false }],
@@ -114,6 +117,9 @@ export function AppProvider({ children, role = 'admin' }) {
       cleaningSchedule,
       recipes,
       todos,
+      fridgeLog,
+      freezerLog,
+      wasteLog,
     }
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
     const url  = URL.createObjectURL(blob)
@@ -137,6 +143,9 @@ export function AppProvider({ children, role = 'admin' }) {
         if (data.cleaningSchedule && typeof data.cleaningSchedule === 'object') setCleaningSchedule(data.cleaningSchedule)
         if (Array.isArray(data.recipes)) setRecipes(data.recipes)
         if (Array.isArray(data.todos))   setTodos(data.todos)
+        if (data.fridgeLog && typeof data.fridgeLog === 'object') setFridgeLog(data.fridgeLog)
+        if (data.freezerLog && typeof data.freezerLog === 'object') setFreezerLog(data.freezerLog)
+        if (Array.isArray(data.wasteLog)) setWasteLog(data.wasteLog)
       } catch {
         alert('Could not read the file — make sure it is a valid Co. Cafe backup.')
       }
@@ -164,6 +173,9 @@ export function AppProvider({ children, role = 'admin' }) {
     recipes, setRecipes,
     todos, setTodos,
     tally, setTally,
+    fridgeLog, setFridgeLog,
+    freezerLog, setFreezerLog,
+    wasteLog, setWasteLog,
     addInventoryItem, updateInventoryItem, deleteInventoryItem, adjustQuantity,
     addMenuItem, updateMenuItem, deleteMenuItem,
     recordSale, deleteSale, deleteShift,

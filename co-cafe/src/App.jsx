@@ -26,6 +26,9 @@ function seedGuestData() {
     localStorage.setItem('cc_guest_tally',      JSON.stringify(GUEST_DATA.tally))
     localStorage.setItem('cc_guest_cleaning',    JSON.stringify(GUEST_DATA.cleaningSchedule))
     localStorage.setItem('cc_guest_recipes',     JSON.stringify(GUEST_DATA.recipes))
+    localStorage.setItem('cc_guest_fridgeLog',   JSON.stringify(GUEST_DATA.fridgeLog))
+    localStorage.setItem('cc_guest_freezerLog',  JSON.stringify(GUEST_DATA.freezerLog))
+    localStorage.setItem('cc_guest_wasteLog',    JSON.stringify(GUEST_DATA.wasteLog))
   } catch {}
 }
 

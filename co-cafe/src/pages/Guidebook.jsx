@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { BookOpen, Sun, Moon, RotateCcw, Pencil, Plus, Trash2, Check, GripVertical, Wrench, ChefHat, ChevronLeft, ChevronRight, Maximize2, X, ClipboardList, ListChecks, FileText, Upload, Coffee, Leaf } from 'lucide-react'
+import { BookOpen, Sun, Moon, RotateCcw, Pencil, Plus, Trash2, Check, GripVertical, Wrench, ChefHat, ChevronLeft, ChevronRight, Maximize2, X, ClipboardList, ListChecks, FileText, Upload, Coffee, Leaf, Thermometer, Snowflake, AlertTriangle } from 'lucide-react'
 import NavBar from '../components/NavBar'
 import { useApp } from '../context/AppContext'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
@@ -255,6 +255,11 @@ export default function Guidebook() {
           <CleaningCard />
           <RecipeBookCard />
 
+        </div>
+
+        {/* — Log Sheets — full width */}
+        <div style={{ marginTop: 'var(--s4)' }}>
+          <LogSheetsCard />
         </div>
 
         {/* — Resident Tally — full width */}
@@ -2201,6 +2206,489 @@ function TodoCard() {
           )}
         </div>
       ))}
+    </div>
+  )
+}
+
+const WASTE_REASONS = ['Spoiled', 'Expired', 'Overproduction', 'Prep mistake', 'Customer return', 'Dropped/damaged', 'Other']
+
+const inputStyle = {
+  padding: 'var(--s2) var(--s3)',
+  borderRadius: 'var(--r2)',
+  border: '1px solid var(--border-strong)',
+  background: 'var(--bg)',
+  color: 'var(--text-primary)',
+  fontSize: '0.8rem',
+  outline: 'none',
+  width: '100%',
+}
+
+function LogSheetsCard() {
+  const { fridgeLog, freezerLog, wasteLog, isGuest } = useApp()
+  const [tab, setTab] = useState('fridge')
+  const [expanded, setExpanded] = useState(false)
+
+  const LOG_TABS = [
+    { key: 'fridge',  label: 'Fridge',  Icon: Thermometer },
+    { key: 'freezer', label: 'Freezer', Icon: Snowflake },
+    { key: 'waste',   label: 'Waste',   Icon: Trash2 },
+  ]
+
+  const tempLog = tab === 'fridge' ? fridgeLog : tab === 'freezer' ? freezerLog : null
+  const previewEntries = tab === 'waste' ? wasteLog.slice(0, 5) : tempLog.entries.slice(0, 5)
+  const hiddenCount = Math.max(0, (tab === 'waste' ? wasteLog.length : tempLog.entries.length) - 5)
+
+  return (
+    <>
+      <div style={{
+        background: 'var(--surface)', borderRadius: 'var(--r3)',
+        border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)',
+        overflow: 'hidden',
+      }}>
+        {/* Header */}
+        <div style={{
+          padding: 'var(--s4) var(--s5)', borderBottom: '1px solid var(--border)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--s2)' }}>
+            <Thermometer size={16} color="var(--mahogany)" />
+            <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Log Sheets</span>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginLeft: 'var(--s1)' }}>
+              fridge · freezer · waste
+            </span>
+          </div>
+          <IconBtn onClick={() => setExpanded(true)} title="Open full log sheets">
+            <Maximize2 size={14} />
+          </IconBtn>
+        </div>
+
+        {/* Tabs */}
+        <div style={{ display: 'flex', borderBottom: '1px solid var(--border)' }}>
+          {LOG_TABS.map(({ key, label, Icon }) => (
+            <button
+              key={key}
+              onClick={() => setTab(key)}
+              style={{
+                flex: 1, padding: 'var(--s3) var(--s4)',
+                background: tab === key ? 'var(--surface-2)' : 'transparent',
+                border: 'none',
+                borderBottom: tab === key ? '2px solid var(--mahogany)' : '2px solid transparent',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--s2)',
+                fontWeight: tab === key ? 600 : 400,
+                color: tab === key ? 'var(--mahogany)' : 'var(--text-muted)',
+                fontSize: '0.875rem', transition: 'color var(--t-fast), background var(--t-fast)',
+              }}
+            >
+              <Icon size={14} /> {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Preview */}
+        <div>
+          {previewEntries.length === 0 ? (
+            <div style={{ padding: 'var(--s5)', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+              No entries yet open to add some.
+            </div>
+          ) : previewEntries.map((e, idx) => (
+            <div
+              key={e.id}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 'var(--s3)',
+                padding: 'var(--s3) var(--s5)',
+                borderBottom: idx < previewEntries.length - 1 ? '1px solid var(--border)' : 'none',
+              }}
+            >
+              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', width: 74, flexShrink: 0 }}>{e.date}</span>
+              {tab === 'waste' ? (
+                <>
+                  <span style={{ flex: 1, fontSize: '0.875rem' }} className="truncate">{e.item}</span>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--fog)', flexShrink: 0 }}>{e.qty} {e.unit}</span>
+                </>
+              ) : (
+                <>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--fog)', width: 48, flexShrink: 0 }}>{e.time}</span>
+                  <span style={{
+                    flex: 1, fontWeight: 600, fontSize: '0.875rem',
+                    color: e.temp > tempLog.maxTemp ? 'var(--danger)' : 'var(--text-primary)',
+                    display: 'flex', alignItems: 'center', gap: 4,
+                  }}>
+                    {e.temp}°F {e.temp > tempLog.maxTemp && <AlertTriangle size={12} />}
+                  </span>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--fog)', flexShrink: 0 }}>{e.initials}</span>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {hiddenCount > 0 && (
+          <button
+            onClick={() => setExpanded(true)}
+            style={{
+              width: '100%', padding: 'var(--s3) var(--s5)',
+              background: 'transparent', border: 'none', borderTop: '1px solid var(--border)',
+              cursor: 'pointer', fontSize: '0.8rem', color: 'var(--mahogany)', textAlign: 'center',
+            }}
+          >
+            +{hiddenCount} more — open to see all
+          </button>
+        )}
+      </div>
+
+      {expanded && (
+        <LogSheetsModal
+          tab={tab} setTab={setTab}
+          isGuest={isGuest}
+          onClose={() => setExpanded(false)}
+        />
+      )}
+    </>
+  )
+}
+
+function LogSheetsModal({ tab, setTab, isGuest, onClose }) {
+  const LOG_TABS = [
+    { key: 'fridge',  label: 'Fridge Log',  Icon: Thermometer },
+    { key: 'freezer', label: 'Freezer Log', Icon: Snowflake },
+    { key: 'waste',   label: 'Waste Log',   Icon: Trash2 },
+  ]
+
+  return (
+    <div
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+      style={{
+        position: 'fixed', inset: 0, background: 'rgba(26,15,10,0.45)',
+        zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 'var(--s5)',
+      }}
+    >
+      <div style={{
+        width: '100%', maxWidth: 680, maxHeight: '88vh',
+        background: 'var(--surface)', borderRadius: 'var(--r3)', boxShadow: 'var(--shadow-xl)',
+        display: 'flex', flexDirection: 'column', overflow: 'hidden',
+      }}>
+        {/* Header */}
+        <div style={{
+          padding: 'var(--s4) var(--s5)', borderBottom: '1px solid var(--border)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0,
+        }}>
+          <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Log Sheets</span>
+          <IconBtn onClick={onClose} title="Close"><X size={14} /></IconBtn>
+        </div>
+
+        {/* Tabs */}
+        <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+          {LOG_TABS.map(({ key, label, Icon }) => (
+            <button
+              key={key}
+              onClick={() => setTab(key)}
+              style={{
+                flex: 1, padding: 'var(--s3) var(--s4)',
+                background: tab === key ? 'var(--surface-2)' : 'transparent',
+                border: 'none',
+                borderBottom: tab === key ? '2px solid var(--mahogany)' : '2px solid transparent',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--s2)',
+                fontWeight: tab === key ? 600 : 400,
+                color: tab === key ? 'var(--mahogany)' : 'var(--text-muted)',
+                fontSize: '0.875rem', transition: 'color var(--t-fast), background var(--t-fast)',
+              }}
+            >
+              <Icon size={14} /> {label}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+          {tab === 'waste' ? <WastePanel isGuest={isGuest} /> : <TempLogPanel type={tab} isGuest={isGuest} />}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function TempLogPanel({ type, isGuest }) {
+  const { fridgeLog, setFridgeLog, freezerLog, setFreezerLog } = useApp()
+  const log    = type === 'fridge' ? fridgeLog : freezerLog
+  const setLog = type === 'fridge' ? setFridgeLog : setFreezerLog
+  const unitLabel = type === 'fridge' ? 'Fridge' : 'Freezer'
+
+  const now = new Date()
+  const [draft, setDraft] = useState({
+    date: now.toISOString().slice(0, 10),
+    time: now.toTimeString().slice(0, 5),
+    temp: '',
+    initials: '',
+    action: '',
+  })
+  const [editingMax, setEditingMax] = useState(false)
+  const [maxDraft, setMaxDraft] = useState(String(log.maxTemp))
+
+  function addEntry() {
+    const temp = parseFloat(draft.temp)
+    if (Number.isNaN(temp) || !draft.initials.trim()) return
+    setLog(prev => ({
+      ...prev,
+      entries: [
+        { id: crypto.randomUUID(), date: draft.date, time: draft.time, temp, initials: draft.initials.trim(), action: draft.action.trim() },
+        ...prev.entries,
+      ],
+    }))
+    setDraft({ date: now.toISOString().slice(0, 10), time: now.toTimeString().slice(0, 5), temp: '', initials: '', action: '' })
+  }
+
+  function removeEntry(id) {
+    setLog(prev => ({ ...prev, entries: prev.entries.filter(e => e.id !== id) }))
+  }
+
+  function saveMax() {
+    const val = parseFloat(maxDraft)
+    if (!Number.isNaN(val)) setLog(prev => ({ ...prev, maxTemp: val }))
+    setEditingMax(false)
+  }
+
+  return (
+    <div style={{ padding: 'var(--s4) var(--s5)' }}>
+      {/* Safe max */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 'var(--s2)', marginBottom: 'var(--s4)',
+        padding: 'var(--s2) var(--s3)', background: 'var(--latte)', borderRadius: 'var(--r2)',
+        border: '1px solid var(--border)', fontSize: '0.8rem', color: 'var(--text-secondary)',
+      }}>
+        <AlertTriangle size={13} color="var(--mahogany)" />
+        <span>Safe max for {unitLabel.toLowerCase()}:</span>
+        {editingMax ? (
+          <>
+            <input
+              autoFocus
+              type="number"
+              value={maxDraft}
+              onChange={e => setMaxDraft(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && saveMax()}
+              style={{ width: 60, ...inputStyle, padding: '2px 6px' }}
+            />
+            <button onClick={saveMax} style={{ border: 'none', background: 'var(--mahogany)', color: 'white', borderRadius: 'var(--r1)', padding: '2px 10px', fontSize: '0.72rem', cursor: 'pointer', fontWeight: 600 }}>Save</button>
+          </>
+        ) : (
+          <>
+            <strong>{log.maxTemp}°F</strong>
+            {!isGuest && (
+              <button onClick={() => { setMaxDraft(String(log.maxTemp)); setEditingMax(true) }} style={{ border: 'none', background: 'transparent', color: 'var(--mahogany)', cursor: 'pointer', fontSize: '0.72rem', textDecoration: 'underline' }}>
+                edit
+              </button>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Add entry */}
+      {!isGuest && (
+        <div style={{
+          display: 'grid', gridTemplateColumns: '1fr 1fr 80px 90px 1.4fr auto',
+          gap: 'var(--s2)', marginBottom: 'var(--s4)',
+          padding: 'var(--s3)', background: 'var(--latte)', borderRadius: 'var(--r2)', border: '1px solid var(--border)',
+        }}>
+          <input type="date" value={draft.date} onChange={e => setDraft(d => ({ ...d, date: e.target.value }))} style={inputStyle} />
+          <input type="time" value={draft.time} onChange={e => setDraft(d => ({ ...d, time: e.target.value }))} style={inputStyle} />
+          <input type="number" step="0.1" placeholder="°F" value={draft.temp} onChange={e => setDraft(d => ({ ...d, temp: e.target.value }))} style={inputStyle} />
+          <input placeholder="Initials" value={draft.initials} onChange={e => setDraft(d => ({ ...d, initials: e.target.value }))} style={inputStyle} />
+          <input placeholder="Corrective action (optional)" value={draft.action} onChange={e => setDraft(d => ({ ...d, action: e.target.value }))} onKeyDown={e => e.key === 'Enter' && addEntry()} style={inputStyle} />
+          <button
+            onClick={addEntry}
+            disabled={draft.temp === '' || !draft.initials.trim()}
+            style={{
+              padding: '0 var(--s3)', borderRadius: 'var(--r2)', border: 'none',
+              background: 'var(--mahogany)', color: 'white', cursor: 'pointer', fontWeight: 600,
+              opacity: (draft.temp === '' || !draft.initials.trim()) ? 0.4 : 1, display: 'flex', alignItems: 'center',
+            }}
+          >
+            <Plus size={16} />
+          </button>
+        </div>
+      )}
+
+      {/* Table */}
+      {log.entries.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: 'var(--s6) 0', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+          No {unitLabel.toLowerCase()} temperatures logged yet.
+        </div>
+      ) : (
+        <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--r2)', overflow: 'hidden' }}>
+          <div style={{
+            display: 'grid', gridTemplateColumns: '1fr 1fr 80px 90px 1.4fr auto',
+            gap: 'var(--s2)', padding: 'var(--s2) var(--s3)', background: 'var(--surface-2)',
+            fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em',
+          }}>
+            <span>Date</span><span>Time</span><span>Temp</span><span>Initials</span><span>Action</span><span />
+          </div>
+          {log.entries.map((e, idx) => {
+            const outOfRange = e.temp > log.maxTemp
+            return (
+              <div
+                key={e.id}
+                style={{
+                  display: 'grid', gridTemplateColumns: '1fr 1fr 80px 90px 1.4fr auto',
+                  gap: 'var(--s2)', alignItems: 'center', padding: 'var(--s2) var(--s3)',
+                  borderTop: idx > 0 ? '1px solid var(--border)' : 'none',
+                  background: outOfRange ? 'rgba(184,64,64,0.05)' : 'transparent',
+                  fontSize: '0.8rem',
+                }}
+              >
+                <span>{e.date}</span>
+                <span>{e.time}</span>
+                <span style={{ fontWeight: 600, color: outOfRange ? 'var(--danger)' : 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  {e.temp}°F {outOfRange && <AlertTriangle size={12} />}
+                </span>
+                <span>{e.initials}</span>
+                <span style={{ color: 'var(--text-muted)' }} className="truncate">{e.action || '—'}</span>
+                {!isGuest ? (
+                  <button
+                    onClick={() => removeEntry(e.id)}
+                    style={{ width: 22, height: 22, border: 'none', background: 'transparent', color: 'var(--fog)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    onMouseEnter={ev => ev.currentTarget.style.color = 'var(--danger)'}
+                    onMouseLeave={ev => ev.currentTarget.style.color = 'var(--fog)'}
+                  >
+                    <X size={13} />
+                  </button>
+                ) : <span />}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function WastePanel({ isGuest }) {
+  const { wasteLog, setWasteLog } = useApp()
+  const now = new Date()
+  const [draft, setDraft] = useState({
+    date: now.toISOString().slice(0, 10),
+    category: 'Food',
+    item: '',
+    qty: '',
+    unit: 'each',
+    reason: 'Spoiled',
+    cost: '',
+    initials: '',
+  })
+
+  const totalCost = wasteLog.reduce((sum, e) => sum + (Number(e.cost) || 0), 0)
+
+  function addEntry() {
+    const item = draft.item.trim()
+    const qty = parseFloat(draft.qty)
+    if (!item || Number.isNaN(qty) || !draft.initials.trim()) return
+    setWasteLog(prev => [
+      {
+        id: crypto.randomUUID(),
+        date: draft.date, category: draft.category, item, qty,
+        unit: draft.unit.trim() || 'each', reason: draft.reason,
+        cost: draft.cost === '' ? 0 : parseFloat(draft.cost) || 0,
+        initials: draft.initials.trim(),
+      },
+      ...prev,
+    ])
+    setDraft(d => ({ ...d, item: '', qty: '', cost: '', initials: '' }))
+  }
+
+  function removeEntry(id) {
+    setWasteLog(prev => prev.filter(e => e.id !== id))
+  }
+
+  return (
+    <div style={{ padding: 'var(--s4) var(--s5)' }}>
+      {/* Add entry */}
+      {!isGuest && (
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 90px 1.3fr 70px 80px 1.1fr 80px 90px auto',
+          gap: 'var(--s2)', marginBottom: 'var(--s4)',
+          padding: 'var(--s3)', background: 'var(--latte)', borderRadius: 'var(--r2)', border: '1px solid var(--border)',
+        }}>
+          <input type="date" value={draft.date} onChange={e => setDraft(d => ({ ...d, date: e.target.value }))} style={inputStyle} />
+          <select value={draft.category} onChange={e => setDraft(d => ({ ...d, category: e.target.value }))} style={inputStyle}>
+            <option>Food</option>
+            <option>Drink</option>
+          </select>
+          <input placeholder="Item" value={draft.item} onChange={e => setDraft(d => ({ ...d, item: e.target.value }))} style={inputStyle} />
+          <input type="number" step="0.1" placeholder="Qty" value={draft.qty} onChange={e => setDraft(d => ({ ...d, qty: e.target.value }))} style={inputStyle} />
+          <input placeholder="Unit" value={draft.unit} onChange={e => setDraft(d => ({ ...d, unit: e.target.value }))} style={inputStyle} />
+          <select value={draft.reason} onChange={e => setDraft(d => ({ ...d, reason: e.target.value }))} style={inputStyle}>
+            {WASTE_REASONS.map(r => <option key={r}>{r}</option>)}
+          </select>
+          <input type="number" step="0.01" placeholder="$ cost" value={draft.cost} onChange={e => setDraft(d => ({ ...d, cost: e.target.value }))} style={inputStyle} />
+          <input placeholder="Initials" value={draft.initials} onChange={e => setDraft(d => ({ ...d, initials: e.target.value }))} onKeyDown={e => e.key === 'Enter' && addEntry()} style={inputStyle} />
+          <button
+            onClick={addEntry}
+            disabled={!draft.item.trim() || draft.qty === '' || !draft.initials.trim()}
+            style={{
+              padding: '0 var(--s3)', borderRadius: 'var(--r2)', border: 'none',
+              background: 'var(--mahogany)', color: 'white', cursor: 'pointer', fontWeight: 600,
+              opacity: (!draft.item.trim() || draft.qty === '' || !draft.initials.trim()) ? 0.4 : 1,
+              display: 'flex', alignItems: 'center',
+            }}
+          >
+            <Plus size={16} />
+          </button>
+        </div>
+      )}
+
+      {/* Table */}
+      {wasteLog.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: 'var(--s6) 0', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+          No waste logged yet.
+        </div>
+      ) : (
+        <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--r2)', overflow: 'hidden' }}>
+          <div style={{
+            display: 'grid', gridTemplateColumns: '1fr 70px 1.3fr 70px 1.1fr 70px 80px auto',
+            gap: 'var(--s2)', padding: 'var(--s2) var(--s3)', background: 'var(--surface-2)',
+            fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em',
+          }}>
+            <span>Date</span><span>Cat.</span><span>Item</span><span>Qty</span><span>Reason</span><span>Cost</span><span>Initials</span><span />
+          </div>
+          {wasteLog.map((e, idx) => (
+            <div
+              key={e.id}
+              style={{
+                display: 'grid', gridTemplateColumns: '1fr 70px 1.3fr 70px 1.1fr 70px 80px auto',
+                gap: 'var(--s2)', alignItems: 'center', padding: 'var(--s2) var(--s3)',
+                borderTop: idx > 0 ? '1px solid var(--border)' : 'none', fontSize: '0.8rem',
+              }}
+            >
+              <span>{e.date}</span>
+              <span style={{ color: 'var(--text-muted)' }}>{e.category}</span>
+              <span className="truncate">{e.item}</span>
+              <span>{e.qty} {e.unit}</span>
+              <span style={{ color: 'var(--text-muted)' }} className="truncate">{e.reason}</span>
+              <span>{e.cost ? `$${Number(e.cost).toFixed(2)}` : '—'}</span>
+              <span>{e.initials}</span>
+              {!isGuest ? (
+                <button
+                  onClick={() => removeEntry(e.id)}
+                  style={{ width: 22, height: 22, border: 'none', background: 'transparent', color: 'var(--fog)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  onMouseEnter={ev => ev.currentTarget.style.color = 'var(--danger)'}
+                  onMouseLeave={ev => ev.currentTarget.style.color = 'var(--fog)'}
+                >
+                  <X size={13} />
+                </button>
+              ) : <span />}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {totalCost > 0 && (
+        <div style={{
+          marginTop: 'var(--s3)', padding: 'var(--s2) var(--s3)', background: 'var(--latte)',
+          borderRadius: 'var(--r2)', display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem',
+        }}>
+          <span style={{ color: 'var(--text-muted)' }}>Total waste cost logged</span>
+          <strong style={{ color: 'var(--mahogany)' }}>${totalCost.toFixed(2)}</strong>
+        </div>
+      )}
     </div>
   )
 }
