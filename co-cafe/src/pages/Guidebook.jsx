@@ -2313,7 +2313,7 @@ function LogSheetsCard() {
                     color: e.temp > tempLog.maxTemp ? 'var(--danger)' : 'var(--text-primary)',
                     display: 'flex', alignItems: 'center', gap: 4,
                   }}>
-                    {e.temp}°F {e.temp > tempLog.maxTemp && <AlertTriangle size={12} />}
+                    {e.temp}°C {e.temp > tempLog.maxTemp && <AlertTriangle size={12} />}
                   </span>
                   <span style={{ fontSize: '0.72rem', color: 'var(--fog)', flexShrink: 0 }}>{e.initials}</span>
                 </>
@@ -2471,7 +2471,7 @@ function TempLogPanel({ type, isGuest }) {
           </>
         ) : (
           <>
-            <strong>{log.maxTemp}°F</strong>
+            <strong>{log.maxTemp}°C</strong>
             {!isGuest && (
               <button onClick={() => { setMaxDraft(String(log.maxTemp)); setEditingMax(true) }} style={{ border: 'none', background: 'transparent', color: 'var(--mahogany)', cursor: 'pointer', fontSize: '0.72rem', textDecoration: 'underline' }}>
                 edit
@@ -2490,7 +2490,7 @@ function TempLogPanel({ type, isGuest }) {
         }}>
           <input type="date" value={draft.date} onChange={e => setDraft(d => ({ ...d, date: e.target.value }))} style={inputStyle} />
           <input type="time" value={draft.time} onChange={e => setDraft(d => ({ ...d, time: e.target.value }))} style={inputStyle} />
-          <input type="number" step="0.1" placeholder="°F" value={draft.temp} onChange={e => setDraft(d => ({ ...d, temp: e.target.value }))} style={inputStyle} />
+          <input type="number" step="0.1" placeholder="°C" value={draft.temp} onChange={e => setDraft(d => ({ ...d, temp: e.target.value }))} style={inputStyle} />
           <input placeholder="Initials" value={draft.initials} onChange={e => setDraft(d => ({ ...d, initials: e.target.value }))} style={inputStyle} />
           <input placeholder="Corrective action (optional)" value={draft.action} onChange={e => setDraft(d => ({ ...d, action: e.target.value }))} onKeyDown={e => e.key === 'Enter' && addEntry()} style={inputStyle} />
           <button
@@ -2537,7 +2537,7 @@ function TempLogPanel({ type, isGuest }) {
                 <span>{e.date}</span>
                 <span>{e.time}</span>
                 <span style={{ fontWeight: 600, color: outOfRange ? 'var(--danger)' : 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  {e.temp}°F {outOfRange && <AlertTriangle size={12} />}
+                  {e.temp}°C {outOfRange && <AlertTriangle size={12} />}
                 </span>
                 <span>{e.initials}</span>
                 <span style={{ color: 'var(--text-muted)' }} className="truncate">{e.action || '—'}</span>

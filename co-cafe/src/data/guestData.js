@@ -178,18 +178,18 @@ export const GUEST_DATA = {
   todos: [],
   tally: { date: '', coffee: 0, tea: 0 },
   fridgeLog: {
-    maxTemp: 40,
+    maxTemp: 4,
     entries: [
-      { id: "fridge-1780540001", date: "2026-06-30", time: "08:05", temp: 37, initials: "JS", action: "" },
-      { id: "fridge-1780540002", date: "2026-06-30", time: "14:10", temp: 39, initials: "MK", action: "" },
-      { id: "fridge-1780540003", date: "2026-06-29", time: "08:00", temp: 43, initials: "JS", action: "Adjusted thermostat, rechecked at close" },
+      { id: "fridge-1780540001", date: "2026-06-30", time: "08:05", temp: 3, initials: "JS", action: "" },
+      { id: "fridge-1780540002", date: "2026-06-30", time: "14:10", temp: 4, initials: "MK", action: "" },
+      { id: "fridge-1780540003", date: "2026-06-29", time: "08:00", temp: 6, initials: "JS", action: "Adjusted thermostat, rechecked at close" },
     ],
   },
   freezerLog: {
-    maxTemp: 0,
+    maxTemp: -18,
     entries: [
-      { id: "freezer-1780540101", date: "2026-06-30", time: "08:07", temp: -2, initials: "JS", action: "" },
-      { id: "freezer-1780540102", date: "2026-06-29", time: "08:02", temp: -1, initials: "MK", action: "" },
+      { id: "freezer-1780540101", date: "2026-06-30", time: "08:07", temp: -19, initials: "JS", action: "" },
+      { id: "freezer-1780540102", date: "2026-06-29", time: "08:02", temp: -18, initials: "MK", action: "" },
     ],
   },
   wasteLog: [

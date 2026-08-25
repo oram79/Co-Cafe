@@ -15,8 +15,8 @@ export function AppProvider({ children, role = 'admin' }) {
   const [recipes,          setRecipes]          = useLocalStorage(isGuest ? 'cc_guest_recipes'   : 'cc_recipes', [])
   const [todos,            setTodos]            = useLocalStorage(isGuest ? 'cc_guest_todos'     : 'cc_todos', [])
   const [tally,            setTally]            = useLocalStorage(isGuest ? 'cc_guest_tally'     : 'cc_tally', { date: '', coffee: 0, tea: 0 })
-  const [fridgeLog,        setFridgeLog]        = useLocalStorage(isGuest ? 'cc_guest_fridgeLog'  : 'cc_fridgeLog',  { maxTemp: 40, entries: [] })
-  const [freezerLog,       setFreezerLog]       = useLocalStorage(isGuest ? 'cc_guest_freezerLog' : 'cc_freezerLog', { maxTemp: 0,  entries: [] })
+  const [fridgeLog,        setFridgeLog]        = useLocalStorage(isGuest ? 'cc_guest_fridgeLog'  : 'cc_fridgeLog',  { maxTemp: 4,   entries: [] })
+  const [freezerLog,       setFreezerLog]       = useLocalStorage(isGuest ? 'cc_guest_freezerLog' : 'cc_freezerLog', { maxTemp: -18, entries: [] })
   const [wasteLog,         setWasteLog]         = useLocalStorage(isGuest ? 'cc_guest_wasteLog'   : 'cc_wasteLog', [])
   const [cleaningSchedule, setCleaningSchedule] = useLocalStorage(isGuest ? 'cc_guest_cleaning'  : 'cc_cleaning', {
     Mon: [{ id: 'mon-1', text: 'Task 1', done: false }, { id: 'mon-2', text: 'Task 2', done: false }],
