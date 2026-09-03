@@ -41,7 +41,7 @@ export default function NavBar() {
           background:    'none',
           border:        'none',
           cursor:        'pointer',
-          padding:       'var(--s1) var(--s2)',
+          padding:       '4px var(--s2)',
           borderRadius:  'var(--r1)',
           display:       'flex',
           alignItems:    'center',
@@ -52,15 +52,15 @@ export default function NavBar() {
         onMouseLeave={e => { e.currentTarget.style.opacity = '1' }}
         title="Home"
       >
-        <span style={{
-          fontFamily:    'var(--font-display)',
-          color:         'var(--caramel)',
-          fontSize:      '1rem',
-          fontWeight:    700,
-          letterSpacing: '0.02em',
-        }}>
-          Co. Cafe
-        </span>
+        <img
+          src="/Co.Cafe.png"
+          alt="Co. Cafe"
+          style={{
+            height:    64,
+            width:     'auto',
+            display:   'block',
+          }}
+        />
         {isGuest && (
           <span style={{
             fontSize:      '0.62rem',

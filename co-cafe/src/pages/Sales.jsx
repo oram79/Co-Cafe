@@ -7,7 +7,7 @@ import {
 import {
   Plus, TrendingUp, DollarSign, ShoppingBag, Trash2,
   BookOpen, Clock, ChevronDown, ChevronRight, Award,
-  Calendar, ArrowUp, ArrowDown,
+  Calendar, ArrowUp, ArrowDown, ArrowLeft,
 } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import NavBar from '../components/NavBar'
@@ -322,7 +322,7 @@ function KpiCard({ label, value, sub, icon: Icon, color, delay }) {
 
 // ── Today sub-components ──────────────────────────────────────────────────────
 
-function DayCharts({ sales }) {
+function DayCharts({ sales, label = 'Today' }) {
   const barData = useMemo(() => hourlyBarData(sales), [sales])
   const catData = useMemo(() => catPieData(sales),    [sales])
   const totalCat = catData.reduce((s, d) => s + d.value, 0)
@@ -336,7 +336,7 @@ function DayCharts({ sales }) {
             <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>Sales performance throughout the day</p>
           </div>
           <div style={{ padding: '4px 10px', borderRadius: 'var(--r-pill)', background: 'rgba(196,129,58,0.12)', fontSize: '0.72rem', fontWeight: 600, color: 'var(--accent)' }}>
-            Today
+            {label}
           </div>
         </div>
         <ResponsiveContainer width="100%" height={200}>
@@ -673,13 +673,78 @@ function AllTimeView({ shifts }) {
   )
 }
 
+// ── Day detail (full-page drill-in) ──────────────────────────────────────────
+
+function DayDetailView({ shift, onBack, onDeleteShift, isGuest }) {
+  const stats    = useMemo(() => calcStats(shift.sales), [shift])
+  const best     = useMemo(() => topItem(shift.sales),   [shift])
+  const label    = fmtDate(shift.startedAt)
+  const fullDate = new Date(shift.startedAt).toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' })
+
+  return (
+    <div className="anim-fade-in" style={{
+      minHeight: 'calc(100vh - 140px)',
+      display: 'flex', flexDirection: 'column', gap: 'var(--s4)',
+    }}>
+      <button className="btn btn-ghost btn-sm" style={{ alignSelf: 'flex-start' }} onClick={onBack}>
+        <ArrowLeft size={13} /> Back to Sales
+      </button>
+
+      <div style={{
+        display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+        flexWrap: 'wrap', gap: 'var(--s3)',
+      }}>
+        <div>
+          <h2 style={{ fontFamily: 'var(--font-display)', lineHeight: 1 }}>{label}</h2>
+          <p className="text-muted text-sm" style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 5 }}>
+            <Clock size={12} /> 8:00 AM – 3:00 PM · {fullDate}
+          </p>
+        </div>
+        {!isGuest && (
+          <button
+            className="btn btn-ghost btn-sm"
+            style={{ color: 'var(--danger)', borderColor: 'rgba(184,64,64,0.25)' }}
+            onClick={() => { onDeleteShift(shift.id); onBack() }}
+          >
+            <Trash2 size={12} /> Delete Day
+          </button>
+        )}
+      </div>
+
+      <div className="grid-4">
+        <KpiCard label="Revenue"      value={`$${stats.totalRevenue.toFixed(2)}`} sub="Day total"        icon={DollarSign}  color="var(--success)" delay={1} />
+        <KpiCard label="Transactions" value={stats.totalTransactions}             sub="Sales recorded"   icon={ShoppingBag} color="var(--accent)"  delay={2} />
+        <KpiCard label="Avg Order"    value={`$${stats.avgOrder.toFixed(2)}`}     sub="Per transaction"  icon={TrendingUp}  color="#5A6A8A"        delay={3} />
+        <KpiCard label="Top Item"     value={best ? best[0] : '—'}                sub={best ? `${best[1]} sold` : 'No data'} icon={Award} color="#8A5A5A" delay={4} />
+      </div>
+
+      {shift.sales.length > 0 ? (
+        <>
+          <DayCharts sales={shift.sales} label={label} />
+
+          <div className="card" style={{ overflow: 'hidden', flex: 1 }}>
+            <div style={{ padding: 'var(--s3) var(--s5)', background: 'var(--latte)', borderBottom: '1px solid var(--border)' }}>
+              <p style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '0.95rem' }}>
+                Transaction Log
+              </p>
+            </div>
+            <TransactionTable sales={shift.sales} onDelete={null} />
+          </div>
+        </>
+      ) : (
+        <EmptyPeriod label="No sales were recorded this day." />
+      )}
+    </div>
+  )
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 export default function Sales() {
   const { shifts, activeShift, isOpen, deleteSale, deleteShift, isGuest } = useApp()
   const [showSaleModal,  setShowSaleModal]  = useState(false)
   const [showMenuModal,  setShowMenuModal]  = useState(false)
-  const [expandedShifts, setExpandedShifts] = useState({})
+  const [openDayId,      setOpenDayId]      = useState(null)
   const [showTxLog,      setShowTxLog]      = useState(true)
   const [period,         setPeriod]         = useState('today')
   const [historyLimit,   setHistoryLimit]   = useState(HISTORY_PAGE_SIZE)
@@ -693,9 +758,22 @@ export default function Sales() {
   const activeStats   = useMemo(() => activeShift ? calcStats(activeShift.sales) : null, [activeShift])
   const bestItem      = useMemo(() => activeShift ? topItem(activeShift.sales) : null, [activeShift])
   const hasSalesToday = activeShift && activeShift.sales.length > 0
+  const openDay       = useMemo(() => pastShifts.find(s => s.id === openDayId) ?? null, [pastShifts, openDayId])
 
-  function toggleShift(id) {
-    setExpandedShifts(prev => ({ ...prev, [id]: !prev[id] }))
+  if (openDay) {
+    return (
+      <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
+        <NavBar />
+        <div className="page" style={{ maxWidth: 1100, paddingTop: 'var(--s5)' }}>
+          <DayDetailView
+            shift={openDay}
+            isGuest={isGuest}
+            onBack={() => setOpenDayId(null)}
+            onDeleteShift={deleteShift}
+          />
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -820,100 +898,45 @@ export default function Sales() {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--s2)' }}>
                   {visibleShifts.map(shift => {
-                    const stats    = calcStats(shift.sales)
-                    const expanded = expandedShifts[shift.id]
-                    const cats     = catPieData(shift.sales)
-                    const best     = topItem(shift.sales)
+                    const stats = calcStats(shift.sales)
+                    const best  = topItem(shift.sales)
 
                     return (
-                      <div key={shift.id} className="card" style={{ overflow: 'hidden' }}>
-                        <button
-                          onClick={() => toggleShift(shift.id)}
-                          style={{
-                            width: '100%', display: 'flex', alignItems: 'center',
-                            gap: 'var(--s3)', padding: 'var(--s4) var(--s5)',
-                            background: 'none', border: 'none', cursor: 'pointer',
-                            textAlign: 'left', transition: 'background var(--t-fast)',
-                            borderBottom: expanded ? '1px solid var(--border)' : 'none',
-                          }}
-                          onMouseEnter={e => e.currentTarget.style.background = 'var(--latte)'}
-                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                        >
-                          <div style={{ width: 28, height: 28, borderRadius: 'var(--r2)', background: 'var(--latte)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                            {expanded ? <ChevronDown size={13} color="var(--text-muted)" /> : <ChevronRight size={13} color="var(--text-muted)" />}
+                      <button
+                        key={shift.id}
+                        onClick={() => setOpenDayId(shift.id)}
+                        className="card"
+                        style={{
+                          width: '100%', display: 'flex', alignItems: 'center',
+                          gap: 'var(--s4)', padding: 'var(--s4) var(--s5)',
+                          cursor: 'pointer', textAlign: 'left',
+                          transition: 'background var(--t-fast), transform var(--t-fast)',
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'var(--latte)'; e.currentTarget.style.transform = 'translateX(2px)' }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface)'; e.currentTarget.style.transform = 'translateX(0)' }}
+                      >
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '0.92rem' }}>{fmtDate(shift.startedAt)}</span>
+                          <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginLeft: 'var(--s2)' }}>
+                            8:00 AM – 3:00 PM{best ? ` · ${best[0]}` : ''}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--s5)', flexShrink: 0 }}>
+                          <div style={{ textAlign: 'right' }}>
+                            <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Sales</p>
+                            <p style={{ fontWeight: 600, fontSize: '0.85rem' }}>{stats.totalTransactions}</p>
                           </div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '0.9rem' }}>{fmtDate(shift.startedAt)}</span>
-                            <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginLeft: 'var(--s2)' }}>8:00 AM – 3:00 PM</span>
+                          <div style={{ textAlign: 'right' }}>
+                            <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Avg</p>
+                            <p style={{ fontWeight: 600, fontSize: '0.85rem' }}>${stats.avgOrder.toFixed(2)}</p>
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--s5)', flexShrink: 0 }}>
-                            <div style={{ textAlign: 'right' }}>
-                              <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Sales</p>
-                              <p style={{ fontWeight: 600, fontSize: '0.85rem' }}>{stats.totalTransactions}</p>
-                            </div>
-                            <div style={{ textAlign: 'right' }}>
-                              <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Avg</p>
-                              <p style={{ fontWeight: 600, fontSize: '0.85rem' }}>${stats.avgOrder.toFixed(2)}</p>
-                            </div>
-                            <div style={{ textAlign: 'right', minWidth: 72 }}>
-                              <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Revenue</p>
-                              <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, color: 'var(--accent)', fontSize: '1rem' }}>${stats.totalRevenue.toFixed(2)}</p>
-                            </div>
+                          <div style={{ textAlign: 'right', minWidth: 72 }}>
+                            <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Revenue</p>
+                            <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, color: 'var(--accent)', fontSize: '1rem' }}>${stats.totalRevenue.toFixed(2)}</p>
                           </div>
-                        </button>
-
-                        {expanded && (
-                          <div style={{ padding: 'var(--s4) var(--s5)' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 'var(--s3)', marginBottom: 'var(--s4)' }}>
-                              {[
-                                { label: 'Revenue',      value: `$${stats.totalRevenue.toFixed(2)}`, color: 'var(--success)' },
-                                { label: 'Transactions', value: stats.totalTransactions,              color: 'var(--accent)'  },
-                                { label: 'Avg Order',    value: `$${stats.avgOrder.toFixed(2)}`,      color: '#5A6A8A'        },
-                                { label: 'Top Item',     value: best ? best[0] : '—',                color: '#8A5A5A'        },
-                              ].map(({ label, value, color }) => (
-                                <div key={label} style={{ padding: 'var(--s3) var(--s4)', background: 'var(--surface)', borderRadius: 'var(--r2)', border: '1px solid var(--border)', borderTop: `2px solid ${color}` }}>
-                                  <p style={{ fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', marginBottom: 4 }}>{label}</p>
-                                  <p style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '1.1rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value}</p>
-                                </div>
-                              ))}
-                            </div>
-
-                            {cats.length > 0 && (
-                              <div style={{ marginBottom: 'var(--s4)' }}>
-                                <p style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.09em', color: 'var(--text-muted)', marginBottom: 'var(--s2)' }}>Revenue by Category</p>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--s2)' }}>
-                                  {cats.map((d, i) => (
-                                    <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 12px', borderRadius: 'var(--r-pill)', background: `${PIE_COLORS[i % PIE_COLORS.length]}18`, border: `1px solid ${PIE_COLORS[i % PIE_COLORS.length]}30`, fontSize: '0.75rem' }}>
-                                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: PIE_COLORS[i % PIE_COLORS.length] }} />
-                                      <span style={{ color: 'var(--text-secondary)' }}>{d.name}</span>
-                                      <span style={{ fontWeight: 700 }}>${d.value.toFixed(2)}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            {shift.sales.length > 0 ? (
-                              <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--r2)', overflow: 'hidden', marginBottom: 'var(--s4)' }}>
-                                <div style={{ padding: 'var(--s2) var(--s4)', background: 'var(--surface)', borderBottom: '1px solid var(--border)', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.09em', color: 'var(--text-muted)' }}>
-                                  Transactions
-                                </div>
-                                <TransactionTable sales={shift.sales} onDelete={null} />
-                              </div>
-                            ) : (
-                              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: 'var(--s4)' }}>No sales recorded this day.</p>
-                            )}
-
-                            {!isGuest && (
-                              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                                <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)', borderColor: 'rgba(184,64,64,0.25)' }} onClick={() => deleteShift(shift.id)}>
-                                  <Trash2 size={12} /> Delete Day
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
+                        </div>
+                        <ChevronRight size={16} color="var(--text-muted)" style={{ flexShrink: 0 }} />
+                      </button>
                     )
                   })}
                 </div>

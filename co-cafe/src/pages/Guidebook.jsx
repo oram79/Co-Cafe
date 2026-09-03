@@ -431,9 +431,10 @@ function avatarColor(idx) { return AVATAR_COLORS[idx % AVATAR_COLORS.length] }
 
 function OrderListCard() {
   const { orders, setOrders, isGuest } = useApp()
-  const [openId,        setOpenId]        = useState(null)
-  const [addingCompany, setAddingCompany] = useState(false)
-  const [newName,       setNewName]       = useState('')
+  const [openId,          setOpenId]          = useState(null)
+  const [addingCompany,   setAddingCompany]   = useState(false)
+  const [newName,         setNewName]         = useState('')
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null)
 
   const selectedCompany = orders.find(c => c.id === openId) ?? null
 
@@ -456,6 +457,12 @@ function OrderListCard() {
     setOrders(prev => prev.map(c =>
       c.id === id ? { ...c, items: [] } : c
     ))
+  }
+
+  function deleteCompany(id) {
+    setOrders(prev => prev.filter(c => c.id !== id))
+    setOpenId(cur => (cur === id ? null : cur))
+    setConfirmDeleteId(null)
   }
 
   return (
@@ -564,10 +571,53 @@ function OrderListCard() {
             const total = company.items.length
             const av    = avatarColor(idx)
 
+            if (confirmDeleteId === company.id) {
+              return (
+                <div
+                  key={company.id}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 'var(--s2)',
+                    padding: 'var(--s3) var(--s4)',
+                    borderTop: idx === 0 ? 'none' : '1px solid var(--border)',
+                    background: 'rgba(184,64,64,0.05)',
+                  }}
+                >
+                  <span className="truncate" style={{ flex: 1, minWidth: 0, fontSize: '0.83rem', color: 'var(--danger)', fontWeight: 500 }}>
+                    Delete “{company.name}”?
+                  </span>
+                  <button
+                    onClick={() => setConfirmDeleteId(null)}
+                    style={{
+                      padding: '5px 12px', borderRadius: 'var(--r2)',
+                      border: '1px solid var(--border)', background: 'transparent',
+                      color: 'var(--text-secondary)', fontSize: '0.78rem', cursor: 'pointer',
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => deleteCompany(company.id)}
+                    style={{
+                      padding: '5px 12px', borderRadius: 'var(--r2)',
+                      border: 'none', background: 'var(--danger)', color: 'white',
+                      fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer',
+                    }}
+                  >
+                    Delete
+                  </button>
+                </div>
+              )
+            }
+
             return (
-              <button
+              <div
                 key={company.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => setOpenId(company.id)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpenId(company.id) }
+                }}
                 style={{
                   width: '100%', display: 'flex', alignItems: 'center',
                   gap: 'var(--s3)', padding: 'var(--s3) var(--s4)',
@@ -604,9 +654,24 @@ function OrderListCard() {
                   {company.file && (
                     <FileText size={13} color="var(--text-muted)" title="Order form attached" />
                   )}
+                  {!isGuest && (
+                    <button
+                      onClick={e => { e.stopPropagation(); setConfirmDeleteId(company.id) }}
+                      title="Delete supplier"
+                      style={{
+                        display: 'flex', padding: 4, borderRadius: 'var(--r1)',
+                        border: 'none', background: 'transparent', color: 'var(--fog)', cursor: 'pointer',
+                        transition: 'all var(--t-fast)',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(184,64,64,0.12)'; e.currentTarget.style.color = 'var(--danger)' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--fog)' }}
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  )}
                   <ChevronRight size={13} color="var(--fog)" />
                 </div>
-              </button>
+              </div>
             )
           })}
         </div>
