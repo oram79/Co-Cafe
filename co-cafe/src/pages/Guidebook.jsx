@@ -1,78 +1,43 @@
 import { useState, useEffect, useRef } from 'react'
-import { BookOpen, Sun, Moon, RotateCcw, Pencil, Plus, Trash2, Check, GripVertical, Wrench, ChefHat, ChevronLeft, ChevronRight, Maximize2, X, ClipboardList, ListChecks, FileText, Upload, Coffee, Leaf, Thermometer, Snowflake, AlertTriangle } from 'lucide-react'
+import { BookOpen, Sun, Moon, RotateCcw, Pencil, Plus, Trash2, Check, Wrench, ChefHat, ChevronLeft, ChevronRight, Maximize2, X, ClipboardList, ListChecks, FileText, Upload, Coffee, Leaf, Thermometer, Snowflake, AlertTriangle } from 'lucide-react'
 import NavBar from '../components/NavBar'
 import { useApp } from '../context/AppContext'
-import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
-import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
+import { useLocalStorage } from '../hooks/useLocalStorage'
+import { DEFAULT_CHECKLISTS } from '../data/defaultChecklists'
 
 const PREVIEW_LIMIT = 6
 
+const todayKey = () => new Date().toISOString().slice(0, 10)
+
 export default function Guidebook() {
-  const { checklists: lists, setChecklists: setLists, isGuest } = useApp()
   const [tab, setTab] = useState('open')
-  const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState('')
   const [expanded, setExpanded] = useState(false)
 
-  useEffect(() => {
-    if (!expanded) setEditing(false)
-  }, [expanded])
+  // Task text is fixed in code (DEFAULT_CHECKLISTS). Only the daily tick state
+  // is stored, and it clears itself automatically each new day.
+  const [doneState, setDoneState] = useLocalStorage('cc_checklist_done', { day: todayKey(), open: [], close: [] })
+  const freshState = doneState.day === todayKey() ? doneState : { day: todayKey(), open: [], close: [] }
+  const doneIds = new Set(freshState[tab] || [])
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
-  )
-
-  const currentList = lists[tab]
+  const currentList = DEFAULT_CHECKLISTS[tab].map(t => ({ ...t, done: doneIds.has(t.id) }))
   const doneCount = currentList.filter(i => i.done).length
   const progress = currentList.length > 0 ? doneCount / currentList.length : 0
   const hiddenCount = Math.max(0, currentList.length - PREVIEW_LIMIT)
 
   function toggle(id) {
-    setLists(prev => ({
-      ...prev,
-      [tab]: prev[tab].map(i => i.id === id ? { ...i, done: !i.done } : i),
-    }))
+    setDoneState(prev => {
+      const base = prev.day === todayKey() ? prev : { day: todayKey(), open: [], close: [] }
+      const set = new Set(base[tab] || [])
+      if (set.has(id)) set.delete(id)
+      else set.add(id)
+      return { ...base, day: todayKey(), [tab]: [...set] }
+    })
   }
 
   function reset() {
-    setLists(prev => ({
-      ...prev,
-      [tab]: prev[tab].map(i => ({ ...i, done: false })),
-    }))
-  }
-
-  function addItem() {
-    const text = draft.trim()
-    if (!text) return
-    setLists(prev => ({
-      ...prev,
-      [tab]: [...prev[tab], { id: crypto.randomUUID(), text, done: false }],
-    }))
-    setDraft('')
-  }
-
-  function removeItem(id) {
-    setLists(prev => ({
-      ...prev,
-      [tab]: prev[tab].filter(i => i.id !== id),
-    }))
-  }
-
-  function editItem(id, text) {
-    setLists(prev => ({
-      ...prev,
-      [tab]: prev[tab].map(i => i.id === id ? { ...i, text } : i),
-    }))
-  }
-
-  function handleDragEnd({ active, over }) {
-    if (!over || active.id === over.id) return
-    setLists(prev => {
-      const items = prev[tab]
-      const oldIndex = items.findIndex(i => i.id === active.id)
-      const newIndex = items.findIndex(i => i.id === over.id)
-      return { ...prev, [tab]: arrayMove(items, oldIndex, newIndex) }
+    setDoneState(prev => {
+      const base = prev.day === todayKey() ? prev : { day: todayKey(), open: [], close: [] }
+      return { ...base, day: todayKey(), [tab]: [] }
     })
   }
 
@@ -311,20 +276,9 @@ export default function Guidebook() {
             }}>
               <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Open & Close Checklists</span>
               <div style={{ display: 'flex', gap: 'var(--s2)' }}>
-                {!isGuest && (
-                  <>
-                    <IconBtn onClick={reset} title="Reset checklist">
-                      <RotateCcw size={14} />
-                    </IconBtn>
-                    <IconBtn
-                      onClick={() => setEditing(e => !e)}
-                      title={editing ? 'Done editing' : 'Edit tasks'}
-                      active={editing}
-                    >
-                      <Pencil size={14} />
-                    </IconBtn>
-                  </>
-                )}
+                <IconBtn onClick={reset} title="Clear all ticks">
+                  <RotateCcw size={14} />
+                </IconBtn>
                 <IconBtn onClick={() => setExpanded(false)} title="Close">
                   <X size={14} />
                 </IconBtn>
@@ -339,74 +293,14 @@ export default function Guidebook() {
 
             {/* Scrollable task list */}
             <div style={{ flex: 1, overflowY: 'auto' }}>
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <SortableContext items={currentList.map(i => i.id)} strategy={verticalListSortingStrategy}>
-                  <div>
-                    {currentList.length === 0 && !editing && (
-                      <div style={{
-                        padding: 'var(--s7) var(--s5)',
-                        textAlign: 'center',
-                        color: 'var(--text-muted)',
-                        fontSize: '0.875rem',
-                      }}>
-                        No tasks yet click <Pencil size={12} style={{ display: 'inline', marginBottom: -2 }} /> to add some.
-                      </div>
-                    )}
-
-                    {currentList.map((item, idx) => (
-                      <SortableTask
-                        key={item.id}
-                        item={item}
-                        isLast={idx === currentList.length - 1}
-                        editing={editing}
-                        onToggle={toggle}
-                        onRemove={removeItem}
-                        onEdit={editItem}
-                      />
-                    ))}
-
-                    {editing && (
-                      <div style={{ display: 'flex', gap: 'var(--s2)', padding: 'var(--s3) var(--s5)' }}>
-                        <input
-                          value={draft}
-                          onChange={e => setDraft(e.target.value)}
-                          onKeyDown={e => e.key === 'Enter' && addItem()}
-                          placeholder="Add a task…"
-                          autoFocus
-                          style={{
-                            flex: 1,
-                            padding: 'var(--s2) var(--s3)',
-                            borderRadius: 'var(--r2)',
-                            border: '1px solid var(--border-strong)',
-                            background: 'var(--bg)',
-                            color: 'var(--text-primary)',
-                            fontSize: '0.875rem',
-                            outline: 'none',
-                          }}
-                        />
-                        <button
-                          onClick={addItem}
-                          style={{
-                            padding: 'var(--s2) var(--s4)',
-                            borderRadius: 'var(--r2)',
-                            border: 'none',
-                            background: 'var(--mahogany)',
-                            color: 'white',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 'var(--s2)',
-                            fontSize: '0.875rem',
-                            fontWeight: 600,
-                          }}
-                        >
-                          <Plus size={14} /> Add
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </SortableContext>
-              </DndContext>
+              {currentList.map((item, idx) => (
+                <TaskRow
+                  key={item.id}
+                  item={item}
+                  isLast={idx === currentList.length - 1}
+                  onToggle={toggle}
+                />
+              ))}
             </div>
           </div>
         </div>
@@ -1734,125 +1628,44 @@ function RecipeModal({ recipes, setRecipes, isGuest, onClose }) {
   )
 }
 
-function SortableTask({ item, isLast, editing, onToggle, onRemove, onEdit }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id })
-  const [inlineEditing, setInlineEditing] = useState(false)
-  const [text, setText] = useState(item.text)
-
-  function commitEdit() {
-    const trimmed = text.trim()
-    if (trimmed && trimmed !== item.text) onEdit(item.id, trimmed)
-    else setText(item.text)
-    setInlineEditing(false)
-  }
-
+function TaskRow({ item, isLast, onToggle }) {
   return (
     <div
-      ref={setNodeRef}
+      onClick={() => onToggle(item.id)}
       style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-        opacity: isDragging ? 0.4 : 1,
         display: 'flex',
         alignItems: 'center',
         gap: 'var(--s3)',
         padding: 'var(--s3) var(--s5)',
-        borderBottom: !isLast || editing ? '1px solid var(--border)' : 'none',
-        background: isDragging ? 'var(--surface-2)' : 'transparent',
-        position: 'relative',
-        zIndex: isDragging ? 10 : 'auto',
+        borderBottom: isLast ? 'none' : '1px solid var(--border)',
+        cursor: 'pointer',
+        transition: 'background var(--t-fast)',
       }}
+      onMouseEnter={e => e.currentTarget.style.background = 'var(--latte)'}
+      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
     >
-      {editing ? (
-        <span
-          {...listeners}
-          {...attributes}
-          style={{
-            color: 'var(--fog)',
-            cursor: isDragging ? 'grabbing' : 'grab',
-            display: 'flex',
-            alignItems: 'center',
-            flexShrink: 0,
-            touchAction: 'none',
-            userSelect: 'none',
-          }}
-        >
-          <GripVertical size={14} />
-        </span>
-      ) : null}
-
-      <button
-        onClick={() => onToggle(item.id)}
+      <span
         style={{
           width: 20, height: 20,
           borderRadius: 6,
           border: item.done ? 'none' : '2px solid var(--fog)',
           background: item.done ? 'var(--mahogany)' : 'transparent',
-          cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0,
           transition: 'all var(--t-fast)',
         }}
       >
         {item.done && <Check size={11} color="white" strokeWidth={3} />}
-      </button>
-
-      {editing && inlineEditing ? (
-        <input
-          value={text}
-          autoFocus
-          onChange={e => setText(e.target.value)}
-          onBlur={commitEdit}
-          onKeyDown={e => {
-            if (e.key === 'Enter') commitEdit()
-            if (e.key === 'Escape') { setText(item.text); setInlineEditing(false) }
-          }}
-          style={{
-            flex: 1,
-            padding: '2px var(--s2)',
-            borderRadius: 'var(--r1)',
-            border: '1px solid var(--border-strong)',
-            background: 'var(--bg)',
-            color: 'var(--text-primary)',
-            fontSize: '0.875rem',
-            outline: 'none',
-          }}
-        />
-      ) : (
-        <span
-          onClick={() => editing && setInlineEditing(true)}
-          title={editing ? 'Click to edit' : undefined}
-          style={{
-            flex: 1,
-            fontSize: '0.875rem',
-            color: item.done ? 'var(--text-muted)' : 'var(--text-primary)',
-            textDecoration: item.done ? 'line-through' : 'none',
-            cursor: editing ? 'text' : 'default',
-            transition: 'color var(--t-fast)',
-          }}
-        >
-          {item.text}
-        </span>
-      )}
-
-      {editing && (
-        <button
-          onClick={() => onRemove(item.id)}
-          style={{
-            width: 26, height: 26,
-            borderRadius: 'var(--r1)',
-            border: 'none',
-            background: 'transparent',
-            color: 'var(--danger)',
-            cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            opacity: 0.7,
-            flexShrink: 0,
-          }}
-        >
-          <Trash2 size={14} />
-        </button>
-      )}
+      </span>
+      <span style={{
+        flex: 1,
+        fontSize: '0.875rem',
+        color: item.done ? 'var(--text-muted)' : 'var(--text-primary)',
+        textDecoration: item.done ? 'line-through' : 'none',
+        transition: 'color var(--t-fast)',
+      }}>
+        {item.text}
+      </span>
     </div>
   )
 }
@@ -2275,7 +2088,7 @@ function TodoCard() {
   )
 }
 
-const WASTE_REASONS = ['Spoiled', 'Expired', 'Overproduction', 'Prep mistake', 'Customer return', 'Dropped/damaged', 'Other']
+const WASTE_REASONS = ['Expired', 'Dropped/damaged', 'Other']
 
 const inputStyle = {
   padding: 'var(--s2) var(--s3)',
@@ -2286,6 +2099,18 @@ const inputStyle = {
   fontSize: '0.8rem',
   outline: 'none',
   width: '100%',
+}
+
+// Flexible input for the log-sheet add rows — no fixed width so it can flex/wrap.
+const wasteInputStyle = {
+  padding: 'var(--s2) var(--s3)',
+  borderRadius: 'var(--r2)',
+  border: '1px solid var(--border-strong)',
+  background: 'var(--surface)',
+  color: 'var(--text-primary)',
+  fontSize: '0.85rem',
+  outline: 'none',
+  minWidth: 0,
 }
 
 function LogSheetsCard() {
@@ -2425,11 +2250,11 @@ function LogSheetsModal({ tab, setTab, isGuest, onClose }) {
       style={{
         position: 'fixed', inset: 0, background: 'rgba(26,15,10,0.45)',
         zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: 'var(--s5)',
+        padding: 'var(--s3)',
       }}
     >
       <div style={{
-        width: '100%', maxWidth: 680, maxHeight: '88vh',
+        width: '100%', maxWidth: 720, maxHeight: '90vh',
         background: 'var(--surface)', borderRadius: 'var(--r3)', boxShadow: 'var(--shadow-xl)',
         display: 'flex', flexDirection: 'column', overflow: 'hidden',
       }}>
@@ -2484,7 +2309,6 @@ function TempLogPanel({ type, isGuest }) {
     time: now.toTimeString().slice(0, 5),
     temp: '',
     initials: '',
-    action: '',
   })
   const [editingMax, setEditingMax] = useState(false)
   const [maxDraft, setMaxDraft] = useState(String(log.maxTemp))
@@ -2495,11 +2319,11 @@ function TempLogPanel({ type, isGuest }) {
     setLog(prev => ({
       ...prev,
       entries: [
-        { id: crypto.randomUUID(), date: draft.date, time: draft.time, temp, initials: draft.initials.trim(), action: draft.action.trim() },
+        { id: crypto.randomUUID(), date: draft.date, time: draft.time, temp, initials: draft.initials.trim() },
         ...prev.entries,
       ],
     }))
-    setDraft({ date: now.toISOString().slice(0, 10), time: now.toTimeString().slice(0, 5), temp: '', initials: '', action: '' })
+    setDraft({ date: now.toISOString().slice(0, 10), time: now.toTimeString().slice(0, 5), temp: '', initials: '' })
   }
 
   function removeEntry(id) {
@@ -2513,7 +2337,7 @@ function TempLogPanel({ type, isGuest }) {
   }
 
   return (
-    <div style={{ padding: 'var(--s4) var(--s5)' }}>
+    <div style={{ padding: 'var(--s4)' }}>
       {/* Safe max */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 'var(--s2)', marginBottom: 'var(--s4)',
@@ -2549,25 +2373,26 @@ function TempLogPanel({ type, isGuest }) {
       {/* Add entry */}
       {!isGuest && (
         <div style={{
-          display: 'grid', gridTemplateColumns: '1fr 1fr 80px 90px 1.4fr auto',
-          gap: 'var(--s2)', marginBottom: 'var(--s4)',
+          display: 'flex', flexWrap: 'wrap', gap: 'var(--s2)', alignItems: 'center',
+          marginBottom: 'var(--s4)',
           padding: 'var(--s3)', background: 'var(--latte)', borderRadius: 'var(--r2)', border: '1px solid var(--border)',
         }}>
-          <input type="date" value={draft.date} onChange={e => setDraft(d => ({ ...d, date: e.target.value }))} style={inputStyle} />
-          <input type="time" value={draft.time} onChange={e => setDraft(d => ({ ...d, time: e.target.value }))} style={inputStyle} />
-          <input type="number" step="0.1" placeholder="°C" value={draft.temp} onChange={e => setDraft(d => ({ ...d, temp: e.target.value }))} style={inputStyle} />
-          <input placeholder="Initials" value={draft.initials} onChange={e => setDraft(d => ({ ...d, initials: e.target.value }))} style={inputStyle} />
-          <input placeholder="Corrective action (optional)" value={draft.action} onChange={e => setDraft(d => ({ ...d, action: e.target.value }))} onKeyDown={e => e.key === 'Enter' && addEntry()} style={inputStyle} />
+          <input type="date" value={draft.date} onChange={e => setDraft(d => ({ ...d, date: e.target.value }))} style={{ ...wasteInputStyle, flex: '1 1 130px' }} />
+          <input type="time" value={draft.time} onChange={e => setDraft(d => ({ ...d, time: e.target.value }))} style={{ ...wasteInputStyle, flex: '1 1 100px' }} />
+          <input type="number" step="0.1" placeholder="°C" value={draft.temp} onChange={e => setDraft(d => ({ ...d, temp: e.target.value }))} onKeyDown={e => e.key === 'Enter' && addEntry()} style={{ ...wasteInputStyle, flex: '2 1 90px' }} />
+          <input placeholder="Initials" value={draft.initials} onChange={e => setDraft(d => ({ ...d, initials: e.target.value }))} onKeyDown={e => e.key === 'Enter' && addEntry()} style={{ ...wasteInputStyle, flex: '2 1 90px' }} />
           <button
             onClick={addEntry}
             disabled={draft.temp === '' || !draft.initials.trim()}
             style={{
-              padding: '0 var(--s3)', borderRadius: 'var(--r2)', border: 'none',
+              flex: '1 1 auto', minWidth: 80, padding: '0 var(--s4)', height: 36,
+              borderRadius: 'var(--r2)', border: 'none',
               background: 'var(--mahogany)', color: 'white', cursor: 'pointer', fontWeight: 600,
-              opacity: (draft.temp === '' || !draft.initials.trim()) ? 0.4 : 1, display: 'flex', alignItems: 'center',
+              opacity: (draft.temp === '' || !draft.initials.trim()) ? 0.4 : 1,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
             }}
           >
-            <Plus size={16} />
+            <Plus size={15} /> Add
           </button>
         </div>
       )}
@@ -2580,11 +2405,11 @@ function TempLogPanel({ type, isGuest }) {
       ) : (
         <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--r2)', overflow: 'hidden' }}>
           <div style={{
-            display: 'grid', gridTemplateColumns: '1fr 1fr 80px 90px 1.4fr auto',
+            display: 'grid', gridTemplateColumns: '1fr 1fr 90px 90px auto',
             gap: 'var(--s2)', padding: 'var(--s2) var(--s3)', background: 'var(--surface-2)',
             fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em',
           }}>
-            <span>Date</span><span>Time</span><span>Temp</span><span>Initials</span><span>Action</span><span />
+            <span>Date</span><span>Time</span><span>Temp</span><span>Initials</span><span />
           </div>
           {log.entries.map((e, idx) => {
             const outOfRange = e.temp > log.maxTemp
@@ -2592,7 +2417,7 @@ function TempLogPanel({ type, isGuest }) {
               <div
                 key={e.id}
                 style={{
-                  display: 'grid', gridTemplateColumns: '1fr 1fr 80px 90px 1.4fr auto',
+                  display: 'grid', gridTemplateColumns: '1fr 1fr 90px 90px auto',
                   gap: 'var(--s2)', alignItems: 'center', padding: 'var(--s2) var(--s3)',
                   borderTop: idx > 0 ? '1px solid var(--border)' : 'none',
                   background: outOfRange ? 'rgba(184,64,64,0.05)' : 'transparent',
@@ -2605,7 +2430,6 @@ function TempLogPanel({ type, isGuest }) {
                   {e.temp}°C {outOfRange && <AlertTriangle size={12} />}
                 </span>
                 <span>{e.initials}</span>
-                <span style={{ color: 'var(--text-muted)' }} className="truncate">{e.action || '—'}</span>
                 {!isGuest ? (
                   <button
                     onClick={() => removeEntry(e.id)}
@@ -2634,21 +2458,23 @@ function WastePanel({ isGuest }) {
     item: '',
     qty: '',
     unit: 'each',
-    reason: 'Spoiled',
+    reason: 'Expired',
     cost: '',
     initials: '',
   })
+  const [showMore, setShowMore] = useState(false)
 
   const totalCost = wasteLog.reduce((sum, e) => sum + (Number(e.cost) || 0), 0)
+  const canAdd = !!draft.item.trim() && draft.qty !== '' && !!draft.initials.trim()
 
   function addEntry() {
-    const item = draft.item.trim()
+    if (!canAdd) return
     const qty = parseFloat(draft.qty)
-    if (!item || Number.isNaN(qty) || !draft.initials.trim()) return
+    if (Number.isNaN(qty)) return
     setWasteLog(prev => [
       {
         id: crypto.randomUUID(),
-        date: draft.date, category: draft.category, item, qty,
+        date: draft.date, category: draft.category, item: draft.item.trim(), qty,
         unit: draft.unit.trim() || 'each', reason: draft.reason,
         cost: draft.cost === '' ? 0 : parseFloat(draft.cost) || 0,
         initials: draft.initials.trim(),
@@ -2663,83 +2489,142 @@ function WastePanel({ isGuest }) {
   }
 
   return (
-    <div style={{ padding: 'var(--s4) var(--s5)' }}>
-      {/* Add entry */}
+    <div style={{ padding: 'var(--s4)' }}>
+      {/* Add entry — simple */}
       {!isGuest && (
         <div style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 90px 1.3fr 70px 80px 1.1fr 80px 90px auto',
-          gap: 'var(--s2)', marginBottom: 'var(--s4)',
-          padding: 'var(--s3)', background: 'var(--latte)', borderRadius: 'var(--r2)', border: '1px solid var(--border)',
+          marginBottom: 'var(--s4)', padding: 'var(--s3)',
+          background: 'var(--latte)', borderRadius: 'var(--r2)', border: '1px solid var(--border)',
         }}>
-          <input type="date" value={draft.date} onChange={e => setDraft(d => ({ ...d, date: e.target.value }))} style={inputStyle} />
-          <select value={draft.category} onChange={e => setDraft(d => ({ ...d, category: e.target.value }))} style={inputStyle}>
-            <option>Food</option>
-            <option>Drink</option>
-          </select>
-          <input placeholder="Item" value={draft.item} onChange={e => setDraft(d => ({ ...d, item: e.target.value }))} style={inputStyle} />
-          <input type="number" step="0.1" placeholder="Qty" value={draft.qty} onChange={e => setDraft(d => ({ ...d, qty: e.target.value }))} style={inputStyle} />
-          <input placeholder="Unit" value={draft.unit} onChange={e => setDraft(d => ({ ...d, unit: e.target.value }))} style={inputStyle} />
-          <select value={draft.reason} onChange={e => setDraft(d => ({ ...d, reason: e.target.value }))} style={inputStyle}>
-            {WASTE_REASONS.map(r => <option key={r}>{r}</option>)}
-          </select>
-          <input type="number" step="0.01" placeholder="$ cost" value={draft.cost} onChange={e => setDraft(d => ({ ...d, cost: e.target.value }))} style={inputStyle} />
-          <input placeholder="Initials" value={draft.initials} onChange={e => setDraft(d => ({ ...d, initials: e.target.value }))} onKeyDown={e => e.key === 'Enter' && addEntry()} style={inputStyle} />
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--s2)', alignItems: 'center' }}>
+            <input
+              placeholder="What was wasted?"
+              value={draft.item}
+              onChange={e => setDraft(d => ({ ...d, item: e.target.value }))}
+              onKeyDown={e => e.key === 'Enter' && addEntry()}
+              style={{ ...wasteInputStyle, flex: '3 1 160px' }}
+            />
+            <input
+              type="number" step="0.1" placeholder="Qty"
+              value={draft.qty}
+              onChange={e => setDraft(d => ({ ...d, qty: e.target.value }))}
+              onKeyDown={e => e.key === 'Enter' && addEntry()}
+              style={{ ...wasteInputStyle, flex: '1 1 60px' }}
+            />
+            <input
+              placeholder="Unit"
+              value={draft.unit}
+              onChange={e => setDraft(d => ({ ...d, unit: e.target.value }))}
+              style={{ ...wasteInputStyle, flex: '1 1 70px' }}
+            />
+            <select
+              value={draft.reason}
+              onChange={e => setDraft(d => ({ ...d, reason: e.target.value }))}
+              style={{ ...wasteInputStyle, flex: '2 1 120px', cursor: 'pointer' }}
+            >
+              {WASTE_REASONS.map(r => <option key={r}>{r}</option>)}
+            </select>
+            <input
+              placeholder="Initials"
+              value={draft.initials}
+              onChange={e => setDraft(d => ({ ...d, initials: e.target.value }))}
+              onKeyDown={e => e.key === 'Enter' && addEntry()}
+              style={{ ...wasteInputStyle, flex: '1 1 70px' }}
+            />
+            <button
+              onClick={addEntry}
+              disabled={!canAdd}
+              style={{
+                flex: '1 1 auto', minWidth: 80, padding: '0 var(--s4)', height: 36,
+                borderRadius: 'var(--r2)', border: 'none',
+                background: 'var(--mahogany)', color: 'white', fontWeight: 600,
+                cursor: canAdd ? 'pointer' : 'not-allowed', opacity: canAdd ? 1 : 0.4,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+              }}
+            >
+              <Plus size={15} /> Add
+            </button>
+          </div>
+
           <button
-            onClick={addEntry}
-            disabled={!draft.item.trim() || draft.qty === '' || !draft.initials.trim()}
+            onClick={() => setShowMore(v => !v)}
             style={{
-              padding: '0 var(--s3)', borderRadius: 'var(--r2)', border: 'none',
-              background: 'var(--mahogany)', color: 'white', cursor: 'pointer', fontWeight: 600,
-              opacity: (!draft.item.trim() || draft.qty === '' || !draft.initials.trim()) ? 0.4 : 1,
-              display: 'flex', alignItems: 'center',
+              marginTop: 'var(--s2)', border: 'none', background: 'transparent',
+              color: 'var(--mahogany)', fontSize: '0.72rem', cursor: 'pointer', padding: 0,
+              display: 'flex', alignItems: 'center', gap: 4,
             }}
           >
-            <Plus size={16} />
+            {showMore ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+            {showMore ? 'Hide extra fields' : 'Add date, category or cost'}
           </button>
+
+          {showMore && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--s2)', marginTop: 'var(--s2)' }}>
+              <input
+                type="date" value={draft.date}
+                onChange={e => setDraft(d => ({ ...d, date: e.target.value }))}
+                style={{ ...wasteInputStyle, flex: '1 1 140px' }}
+              />
+              <select
+                value={draft.category}
+                onChange={e => setDraft(d => ({ ...d, category: e.target.value }))}
+                style={{ ...wasteInputStyle, flex: '1 1 100px', cursor: 'pointer' }}
+              >
+                <option>Food</option>
+                <option>Drink</option>
+              </select>
+              <input
+                type="number" step="0.01" placeholder="$ cost (optional)"
+                value={draft.cost}
+                onChange={e => setDraft(d => ({ ...d, cost: e.target.value }))}
+                style={{ ...wasteInputStyle, flex: '1 1 130px' }}
+              />
+            </div>
+          )}
         </div>
       )}
 
-      {/* Table */}
+      {/* Entries */}
       {wasteLog.length === 0 ? (
         <div style={{ textAlign: 'center', padding: 'var(--s6) 0', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
           No waste logged yet.
         </div>
       ) : (
         <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--r2)', overflow: 'hidden' }}>
-          <div style={{
-            display: 'grid', gridTemplateColumns: '1fr 70px 1.3fr 70px 1.1fr 70px 80px auto',
-            gap: 'var(--s2)', padding: 'var(--s2) var(--s3)', background: 'var(--surface-2)',
-            fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em',
-          }}>
-            <span>Date</span><span>Cat.</span><span>Item</span><span>Qty</span><span>Reason</span><span>Cost</span><span>Initials</span><span />
-          </div>
           {wasteLog.map((e, idx) => (
             <div
               key={e.id}
               style={{
-                display: 'grid', gridTemplateColumns: '1fr 70px 1.3fr 70px 1.1fr 70px 80px auto',
-                gap: 'var(--s2)', alignItems: 'center', padding: 'var(--s2) var(--s3)',
-                borderTop: idx > 0 ? '1px solid var(--border)' : 'none', fontSize: '0.8rem',
+                display: 'flex', alignItems: 'center', gap: 'var(--s3)',
+                padding: 'var(--s3)', fontSize: '0.82rem',
+                borderTop: idx > 0 ? '1px solid var(--border)' : 'none',
               }}
             >
-              <span>{e.date}</span>
-              <span style={{ color: 'var(--text-muted)' }}>{e.category}</span>
-              <span className="truncate">{e.item}</span>
-              <span>{e.qty} {e.unit}</span>
-              <span style={{ color: 'var(--text-muted)' }} className="truncate">{e.reason}</span>
-              <span>{e.cost ? `$${Number(e.cost).toFixed(2)}` : '—'}</span>
-              <span>{e.initials}</span>
-              {!isGuest ? (
+              <span style={{ width: 44, flexShrink: 0, color: 'var(--text-muted)', fontSize: '0.72rem' }}>
+                {e.date.slice(5)}
+              </span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="truncate" style={{ fontWeight: 500 }}>{e.item}</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }} className="truncate">
+                  {e.qty} {e.unit} · {e.reason}{e.category ? ` · ${e.category}` : ''}
+                </div>
+              </div>
+              {e.cost ? (
+                <span style={{ flexShrink: 0, color: 'var(--text-secondary)' }}>${Number(e.cost).toFixed(2)}</span>
+              ) : null}
+              <span style={{ flexShrink: 0, width: 30, textAlign: 'right', color: 'var(--text-muted)', fontSize: '0.72rem' }}>
+                {e.initials}
+              </span>
+              {!isGuest && (
                 <button
                   onClick={() => removeEntry(e.id)}
-                  style={{ width: 22, height: 22, border: 'none', background: 'transparent', color: 'var(--fog)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  style={{ flexShrink: 0, border: 'none', background: 'transparent', color: 'var(--fog)', cursor: 'pointer', display: 'flex' }}
                   onMouseEnter={ev => ev.currentTarget.style.color = 'var(--danger)'}
                   onMouseLeave={ev => ev.currentTarget.style.color = 'var(--fog)'}
                 >
                   <X size={13} />
                 </button>
-              ) : <span />}
+              )}
             </div>
           ))}
         </div>

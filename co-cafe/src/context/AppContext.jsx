@@ -10,7 +10,6 @@ export function AppProvider({ children, role = 'admin' }) {
   const [inventory,   setInventory]   = useLocalStorage(isGuest ? 'cc_guest_inventory'  : 'cc_inventory', [])
   const [menu,        setMenu]        = useLocalStorage(isGuest ? 'cc_guest_menu'        : 'cc_menu', [])
   const [shifts,      setShifts]      = useLocalStorage(isGuest ? 'cc_guest_shifts'      : 'cc_shifts', [])
-  const [checklists,  setChecklists]  = useLocalStorage(isGuest ? 'cc_guest_checklists'  : 'co-cafe-checklists', { open: [], close: [] })
   const [orders,           setOrders]           = useLocalStorage(isGuest ? 'cc_guest_orders'    : 'cc_orders', [])
   const [recipes,          setRecipes]          = useLocalStorage(isGuest ? 'cc_guest_recipes'   : 'cc_recipes', [])
   const [todos,            setTodos]            = useLocalStorage(isGuest ? 'cc_guest_todos'     : 'cc_todos', [])
@@ -112,7 +111,6 @@ export function AppProvider({ children, role = 'admin' }) {
       inventory,
       menu,
       shifts,
-      checklists,
       orders,
       cleaningSchedule,
       recipes,
@@ -138,7 +136,6 @@ export function AppProvider({ children, role = 'admin' }) {
         if (Array.isArray(data.inventory)) setInventory(data.inventory)
         if (Array.isArray(data.menu))      setMenu(data.menu)
         if (Array.isArray(data.shifts))    setShifts(data.shifts)
-        if (data.checklists && typeof data.checklists === 'object') setChecklists(data.checklists)
         if (Array.isArray(data.orders))    setOrders(data.orders)
         if (data.cleaningSchedule && typeof data.cleaningSchedule === 'object') setCleaningSchedule(data.cleaningSchedule)
         if (Array.isArray(data.recipes)) setRecipes(data.recipes)
@@ -167,7 +164,6 @@ export function AppProvider({ children, role = 'admin' }) {
   const value = {
     isGuest,
     inventory, menu, shifts, activeShift, isOpen,
-    checklists, setChecklists,
     orders, setOrders,
     cleaningSchedule, setCleaningSchedule,
     recipes, setRecipes,

@@ -20,7 +20,6 @@ function seedGuestData() {
     localStorage.setItem('cc_guest_inventory',  JSON.stringify(GUEST_DATA.inventory))
     localStorage.setItem('cc_guest_menu',        JSON.stringify(GUEST_DATA.menu))
     localStorage.setItem('cc_guest_shifts',      JSON.stringify(GUEST_DATA.shifts))
-    localStorage.setItem('cc_guest_checklists',  JSON.stringify(GUEST_DATA.checklists))
     localStorage.setItem('cc_guest_orders',      JSON.stringify(GUEST_DATA.orders))
     localStorage.setItem('cc_guest_todos',       JSON.stringify(GUEST_DATA.todos))
     localStorage.setItem('cc_guest_tally',      JSON.stringify(GUEST_DATA.tally))
